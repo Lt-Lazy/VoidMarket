@@ -8,6 +8,29 @@
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
+  <script>
+  (function guardAuth(){
+    try {
+      const sess = JSON.parse(localStorage.getItem("vm_session_v1"));
+      if (!sess || !sess.username) {
+        // not logged in -> replace history entry so back won't return
+        location.replace("index.html");
+        return;
+      }
+      // Handle bfcache restore (user pressed Back)
+      window.addEventListener("pageshow", function (e) {
+        if (e.persisted) {
+          const s = JSON.parse(localStorage.getItem("vm_session_v1") || "null");
+          if (!s || !s.username) location.replace("index.html");
+        }
+      });
+    } catch {
+      location.replace("index.html");
+    }
+  })();
+  
+</script>
+
 </head>
 <body>
   <header class="vm-header">
