@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>VoidMarket – Collectibles & Digital Art</title>
+  <link rel="stylesheet" href="style.css" />
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+</head>
+<body>
+  <header class="vm-header">
+    <div class="brand">
+      <img src="assets\boxes\beta\bta-sko.png" class="logo" alt="">
+      <div>
+        <h1>VoidMarket</h1>
+        <p class="tag">Open boxes, collect art – all free.</p>
+      </div>
+    </div>
+
+    <div class="wallet">
+      <div class="coins" title="Your coins">
+        <strong id="coinCount">0</strong>
+        <span>Credit</span>
+      </div>
+    </div>
+  </header>
+
+  <nav class="vm-tabs" role="tablist" aria-label="Navigation">
+    <button class="tab active" data-tab="market">Market</button>
+    <button class="tab" data-tab="inventory">Inventory</button>
+    <button class="tab" data-tab="info">Info</button>
+    <button class="tab" data-tab="achievements">Achievements</button>
+  </nav>
+
+  <main>
+    <!-- MARKET -->
+    <section id="market" class="tabpanel active" aria-labelledby="market-tab">
+      
+      
+      <div id="marketCards" class="cards"></div>
+
+
+      <!-- Opening animation overlay -->
+      <div id="openingOverlay" class="opening hidden" aria-live="polite">
+        <div class="opening-box">
+          <img id="openingImg" src="" alt="Opening box" />
+          <div class="opening-pulse"></div>
+          <p class="opening-text">Opening...</p>
+        </div>
+      </div>
+
+      <!-- Reveal (result) -->
+      <div id="revealArea" class="reveal hidden" aria-live="polite">
+        <div class="sparkle"></div>
+        <img id="revealImg" src="" alt="You received" />
+        <div class="reveal-info">
+          <h3 id="revealName">You got an item!</h3>
+          <span id="revealTag" class="pill">RARITY</span>
+          <button id="revealClose" class="btn ghost">Close</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- INVENTORY -->
+    <section id="inventory" class="tabpanel" aria-labelledby="inventory-tab">
+      <div class="inv-toolbar">
+        <div class="filter">
+          <label for="rarityFilter">Filter:</label>
+          <select id="rarityFilter">
+            <option value="ALL">All</option>
+            <option value="COMMON">Common</option>
+            <option value="RARE">Rare</option>
+            <option value="EPIC">Epic</option>
+            <option value="LEGENDARY">Legendary</option>
+            <option value="MYTHIC">Mythic</option>
+          </select>
+        </div>
+      </div>
+
+      <div id="inventoryGrid" class="grid"></div>
+      <p id="emptyInv" class="muted">No items yet – open a box in the Market!</p>
+    </section>
+
+    <!-- ACHIEVEMENTS -->
+    <section id="achievements" class="tabpanel" aria-labelledby="achievements-tab">
+      <div class="ach-wrap">
+        <h2>Achievements <span id="achCounter" class="ach-counter"></span></h2>
+        <p class="muted">Locked achievements appear dimmed until you complete them.</p>
+        <div id="achList" class="ach-list"></div>
+      </div>
+    </section>
+
+    <!-- ITEM MODAL -->
+    <div id="itemModal" class="modal hidden" role="dialog" aria-modal="true" aria-label="Item details">
+      <div class="modal-card">
+        <button id="itemModalClose" class="modal-close" aria-label="Close">✕</button>
+        <div class="modal-body">
+          <img id="modalImg" src="" alt="" class="modal-img" />
+          <div class="modal-info">
+            <h3 id="modalName">Item name</h3>
+            <div class="modal-meta">
+              <span id="modalRarity" class="pill">RARITY</span>
+              <span id="modalCount" class="pill">x1</span>
+            </div>
+            <p id="modalDesc" class="muted">Description...</p>
+            <div class="value-row">
+              <span>Value (each):</span>
+              <strong id="modalValue">0</strong> Credit
+            </div>
+            <div class="modal-actions">
+              <button id="sellOneBtn" class="btn">Sell 1</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- INFO -->
+    <section id="info" class="tabpanel" aria-labelledby="info-tab">
+      <div class="info">
+
+        <h3>EVENTS</h3>
+        <ul>
+          <li>Beta boxes: 09.09.25 - 10.01.26</li>
+          <li></li>
+        </ul>
+
+
+
+        <h3>Community Epic/Legendary-drop activity (last 24 h) ⚠️Chart under testing (Not real pulls)⚠️</h3>
+        <canvas id="communityChart" height="140"></canvas>
+
+      </div>
+    </section>
+  </main>
+
+  <footer class="vm-footer">
+    <small>Built for fun – everything runs locally in your browser.</small>
+  </footer>
+
+  <div id="toast" class="toast" aria-live="polite"></div>
+
+  <script src="script.js"></script>
+</body>
+</html>

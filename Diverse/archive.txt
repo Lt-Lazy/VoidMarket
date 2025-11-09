@@ -1,0 +1,29 @@
+const RARITY = {
+  COMMON: "COMMON", 5 - 50c
+  RARE: "RARE", 50 - 500c
+  EPIC: "EPIC", 500 - 1000c
+  LEGENDARY: "LEGENDARY", 1000 - 500.000c
+  GLITCH: "GLITCH",
+};
+
+
+
+
+==========================BOXER==========================
+      id: "normal",
+      name: "Standard Box",
+      price: 0,
+      design: "assets/boxes/boxNormal/box-normal.png",
+      rates: { COMMON: 80, RARE: 10, EPIC: 6, LEGENDARY: 3, MYTHIC: 1 },
+      pool: [
+        { id: "nl-gr1", name: "Grodr",             rarity: RARITY.COMMON,    img: "assets/boxes/boxNormal/nl-gr1.png", description: "Sea life 01: Grodr, a fresh water fish. Likes to be around other same-species fish, sensitive, Not fond of Albino Grodr", value: 10 },
+        { id: "nl-gr2", name: "Grouder",           rarity: RARITY.COMMON,    img: "assets/boxes/boxNormal/nl-gr2.png", description: "Sea life 02: Grouder, fresh water fish, big brother of grodr, in the same fish family. Hunts alone, protective", value: 15 },
+        { id: "nl-kr1", name: "Krap",              rarity: RARITY.COMMON,    img: "assets/boxes/boxNormal/nl-kr1.png", description: "Sea life 03: Krap, salt water fish, more fond of high temperate waters (exotic), extravagant, swims slow", value: 30 },
+        { id: "nl-al1", name: "Albino Grodr",      rarity: RARITY.RARE,      img: "assets/boxes/boxNormal/nl-al1.png", description: "Sea life 04: Albino Grodr, fresh water fish, branched and exiled from the Grodr fish because of their intimidating look, wouldnt hurt a fly...", value: 150 },
+        { id: "nl-al2", name: "Albino Krap",       rarity: RARITY.EPIC,      img: "assets/boxes/boxNormal/nl-al2.png", description: "Sea life 05: Albino Krap, salt water fish, more fond of high temperate waters, Leaders of other Krap, swims fast, usually around others", value: 650 },
+        { id: "nl-gw1", name: "Great White",       rarity: RARITY.LEGENDARY, img: "assets/boxes/boxNormal/nl-gw1.png", description: "Sea life 06: Great White, the king of the waters, hunts alone, not the top predator", value: 2300 },
+        { id: "nl-egw", name: "Elder Great White", rarity: RARITY.MYTHIC,    img: "assets/boxes/boxNormal/nl-egw.png", description: "Sea life 07: Elder Great White, leader of the shark family, the top predator", value: 2300 },
+
+      ]
+
+
