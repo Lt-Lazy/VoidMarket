@@ -131,6 +131,21 @@ const DATA = {
         { id: "bta-asf", name: "Ashfin",            rarity: RARITY.LEGENDARY, img: "assets/boxes/beta/bta-asf.png", description: "VoidQuest 07: Nocturne, Not much data, look based on observations around boiling clXx..ERROR404n4n1 ", value: 12530 },
       ]
     },
+    {
+      id: "HW25",
+      name: "Halloween 25 Box",
+      price: 800,
+      design: "assets/boxes/Halloween/hw25/HW2025.png",
+      rates: { COMMON: 60, RARE: 20, EPIC: 17, LEGENDARY: 3},
+      pool: [
+        { id: "hw25-sc1", name: "Scream",           rarity: RARITY.COMMON,    img: "assets/boxes/Halloween/hw25/hw25-sc1.png", description: "Halloween25 01: Scream Card, First item in the Halloween 2025 event box. Fun world!", value: 70 },
+        { id: "hw25-gh1", name: "Ghost",            rarity: RARITY.COMMON,    img: "assets/boxes/Halloween/hw25/hw25-gh1.png", description: "Halloween25 02: Ghost, as scared of you as you are of them, have a little spirit!", value: 81 },
+        { id: "hw25-crw", name: "Scare Crow",       rarity: RARITY.RARE,      img: "assets/boxes/Halloween/hw25/hw25-crw.png", description: "Halloween25 03: Scrare Crow, At first hand just a tool to protect crops, unless it moves..", value: 651 },
+        { id: "hw25-grs", name: "Grave Stone",      rarity: RARITY.EPIC,      img: "assets/boxes/Halloween/hw25/hw25-grs.png", description: "Halloween25 04: Scrare Crow, At first hand just a tool to protect crops, unless it moves..", value: 3800 },
+        { id: "hw25-cul", name: "Suspicious Brew",  rarity: RARITY.LEGENDARY, img: "assets/boxes/Halloween/hw25/hw25-cul.png", description: "Halloween25 05: Suspicious Brew, around 12 ingredients, deep void lure is one of them...", value: 93000 },
+        { id: "hw25-hau", name: "Haunted Painting", rarity: RARITY.LEGENDARY, img: "assets/boxes/Halloween/hw25/hw25-hau.png", description: "Halloween25 06: Haunted Painting, Seems a bit too late at night to have the lights on, dont you think?", value: 431000 },
+      ]
+    },
     //  Add more boxes here (id, name, price, design, rates, pool)
   ]
 };
