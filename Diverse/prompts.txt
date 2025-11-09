@@ -56,6 +56,20 @@ Tok ikke med "små" spørsmål mellom 10 og 11.
 
 ---------------Prompt-12---------------
 
+"Vi må lage en index.html. Dette skal være siden man kommer til først. Vi skal lage en form for profil for brukeren. Det skal være en forside som skal brukes til å lage en profil. Det må også være plass til informasjon om spillet og siden. Når spilleren først ankommer denne siden skal det være en innlogging hvor de kan lage en bruker hvis de ikke allerede har en i local storage. Man skal velge et brukernavn og et passord. Når man velger det skal man bli innlogget med en bruker og komme til voidmarket.html. Statusen skal være som innlogget mens man er i voidmarket.html. Og vi må legget til et felt øverst til høyre i voidmarket.html ved credits som viser profilen og en mulighet for å logge ut, når man logger ut kommer man til logg inn siden (index.html). Vi skal legge til flere ting i profilen senere, som for eksempel titler som man kan få av å fullføre ting. Men det tar vi senere"
+
+---------------Prompt-13---------------
+
+
+
+
+
+
+
+
+
+
+
 
 
 

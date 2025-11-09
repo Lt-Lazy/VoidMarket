@@ -20,6 +20,17 @@
     </div>
 
     <div class="wallet">
+      <div class="profile">
+        <button id="profileBtn" class="profile-btn" aria-haspopup="true" aria-expanded="false">
+          <span class="avatar">👤</span>
+          <span id="profileName">Guest</span>
+        </button>
+        <div id="profileMenu" class="profile-menu hidden" role="menu" aria-label="Profile">
+          <div class="pm-row"><strong id="profileUser">Guest</strong></div>
+          <button id="logoutBtn" class="menu-item" role="menuitem">Log out</button>
+          <button id="deleteUserBtn" class="menu-item danger" role="menuitem">Delete user…</button>
+        </div>
+      </div>
       <div class="coins" title="Your coins">
         <strong id="coinCount">0</strong>
         <span>Credit</span>

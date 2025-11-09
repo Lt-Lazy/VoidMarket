@@ -243,6 +243,30 @@ main{ max-width:1100px; margin:20px auto; padding:0 20px; }
 .ach-body p{ margin:0; color:var(--muted); }
 .ach-meta{ margin-top:6px; font-size:12px; color:var(--muted); }
 
+/* Profile badge */
+.profile{ position: relative; }
+.profile-btn{
+  display:flex; gap:8px; align-items:center;
+  padding:8px 12px; border-radius:999px; border:1px solid var(--ring);
+  background: var(--panel); color:var(--text); cursor:pointer;
+}
+.profile-btn .avatar{ width:20px; height:20px; display:grid; place-items:center; }
+.profile-menu{
+  position:absolute; right:0; top: 110%;
+  background: var(--card); border:1px solid var(--ring); border-radius:12px;
+  padding:8px; box-shadow: var(--shadow); min-width: 180px; z-index: 10;
+}
+.profile-menu.hidden{ display:none; }
+.pm-row{ padding:6px 8px; color: var(--muted); }
+.menu-item{
+  width:100%; text-align:left; padding:8px 10px; border-radius:10px; border:1px solid var(--ring);
+  background: var(--panel); color: var(--text); cursor:pointer;
+}
+.menu-item:hover{ background:#1f2430; }
+
+.menu-item.danger { border-color: transparent; background: #3a1f22; color: #fecaca; }
+.menu-item.danger:hover { background: #4a2327; color: #fee2e2; }
+
 /* Animations */
 @keyframes pop{ from{ transform: scale(.95); opacity: .6 } to{ transform: scale(1); opacity:1 } }
 @keyframes pulse{ 0%{ transform: scale(.9); opacity:.6 } 50%{ transform: scale(1); opacity:1 } 100%{ transform: scale(.9); opacity:.6 } }

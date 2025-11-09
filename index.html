@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>VoidMarket – Sign in</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    /* Page-specific tweaks (kept tiny to avoid touching your main CSS) */
+    .auth-wrap{
+      min-height: 100dvh; display:grid; place-items:center; padding: 24px;
+    }
+    .auth-card{
+      width:min(540px, 94vw);
+      background: var(--card); border:1px solid var(--ring); border-radius: 18px;
+      box-shadow: var(--shadow); padding: 20px; display:grid; gap: 14px;
+    }
+    .auth-head{ display:flex; align-items:center; gap:10px; }
+    .auth-logo{ width:42px; height:42px; border-radius:12px; display:grid; place-items:center;
+      background: radial-gradient(120% 120% at 10% 20%, #2dd4bf, #7c5cff); color:white; font-weight:700;
+      box-shadow: var(--shadow);
+    }
+    .auth-form{ display:grid; gap:10px; }
+    .row{ display:grid; gap:6px; }
+    .row input{
+      padding:12px; border-radius:12px; border:1px solid var(--ring); background: var(--panel); color: var(--text);
+    }
+    .row label{ font-size:14px; color: var(--muted); }
+    .auth-actions{ display:flex; gap:10px; align-items:center; justify-content:space-between; margin-top:4px; }
+    .hint{ color:var(--muted); font-size:12px; }
+    .btn.wide{ width:100%; }
+    .err{ color:#fca5a5; font-size:13px; min-height: 18px; }
+  </style>
+</head>
+<body>
+  <div class="auth-wrap">
+    <div class="auth-card">
+      <div class="auth-head">
+        <img src="assets\boxes\beta\bta-sko.png" class="logo" alt="">
+        <div>
+          <h1 style="margin:0;">VoidMarket</h1>
+          <p class="tag" style="margin-top:2px;">Create a local profile to start collecting.</p>
+        </div>
+      </div>
+
+      <form id="authForm" class="auth-form" autocomplete="off">
+        <div class="row">
+          <label for="username">Username</label>
+          <input id="username" name="username" required minlength="3" maxlength="24" placeholder="Your name" />
+        </div>
+        <div class="row">
+          <label for="password">Password</label>
+          <input id="password" name="password" type="password" required minlength="4" maxlength="64" placeholder="••••••••" />
+        </div>
+        <div class="err" id="authErr"></div>
+        <div class="auth-actions">
+          <button type="button" id="loginBtn" class="btn primary">Sign in</button>
+          <button type="button" id="registerBtn" class="btn accent">Create account</button>
+        </div>
+        <div class="hint">All data is stored locally in your browser. No server, no cloud.</div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // ---- Local "Auth" (localStorage only) ----
+    const USERS_KEY = "vm_users_v1";
+    const SESSION_KEY = "vm_session_v1";
+
+    // Lightweight SHA-256 hashing to avoid storing plain text
+    async function sha256(str){
+      const enc = new TextEncoder().encode(str);
+      const buf = await crypto.subtle.digest("SHA-256", enc);
+      return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,"0")).join("");
+    }
+
+    function loadUsers(){
+      try { return JSON.parse(localStorage.getItem(USERS_KEY)) || {}; }
+      catch { return {}; }
+    }
+    function saveUsers(obj){
+      localStorage.setItem(USERS_KEY, JSON.stringify(obj || {}));
+    }
+    function setSession(username){
+      localStorage.setItem(SESSION_KEY, JSON.stringify({ username, loginAt: Date.now() }));
+    }
+
+    function showError(msg){
+      document.getElementById("authErr").textContent = msg || "";
+    }
+
+    async function handleLogin(){
+      showError("");
+      const username = document.getElementById("username").value.trim();
+      const password = document.getElementById("password").value;
+
+      const users = loadUsers();
+      const user = users[username];
+      if(!user){ return showError("User not found. Create an account first. Name and pass is case sensitive!"); }
+
+      const hash = await sha256(password);
+      if(hash !== user.passHash){ return showError("Incorrect password."); }
+
+      setSession(username);
+      window.location.href = "voidmarket.html";
+    }
+
+    async function handleRegister(){
+      showError("");
+      const username = document.getElementById("username").value.trim();
+      const password = document.getElementById("password").value;
+
+      if(username.length < 3){ return showError("Username must be at least 3 characters."); }
+      if(password.length < 4){ return showError("Password must be at least 4 characters."); }
+
+      const users = loadUsers();
+      if(users[username]){ return showError("That username is taken. Choose another."); }
+
+      const passHash = await sha256(password);
+      users[username] = { passHash, createdAt: Date.now() };
+      saveUsers(users);
+      setSession(username);
+      window.location.href = "voidmarket.html";
+    }
+
+    document.getElementById("loginBtn").addEventListener("click", handleLogin);
+    document.getElementById("registerBtn").addEventListener("click", handleRegister);
+
+    // If already logged in, go straight to the game
+    (function autoRedirectIfLoggedIn(){
+      try{
+        const sess = JSON.parse(localStorage.getItem(SESSION_KEY));
+        if(sess?.username){ window.location.href = "voidmarket.html"; }
+      }catch{}
+    })();
+  </script>
+</body>
+</html>

@@ -8,6 +8,85 @@
       If you keep the old hard-coded cards, normal/event keep working; new boxes will just require the marketCards container to show.
 */
 
+/* ---------- Local session (index.html sets this) ---------- */
+const USERS_KEY   = (typeof window !== "undefined" && window.USERS_KEY)   ? window.USERS_KEY   : "vm_users_v1";
+const SESSION_KEY = (typeof window !== "undefined" && window.SESSION_KEY) ? window.SESSION_KEY : "vm_session_v1";
+
+function deleteCurrentUser(){
+  const sess = getSession?.();
+  const uname = sess?.username;
+  if(!uname) return;
+
+  const ok = confirm(
+    `Delete user "${uname}" and all local progress?\n\n` +
+    "This removes this profile and its saved inventory, coins, and achievements from this browser."
+  );
+  if(!ok) return;
+
+  // 1) Remove this user's save file
+  try { localStorage.removeItem(userSaveKey(uname)); } catch {}
+
+  // 2) Remove the user from the local users store
+  const users = loadUsers();
+  if (users && users[uname]) {
+    delete users[uname];
+    saveUsers(users);
+  }
+
+  // 3) Clear session and go back to login
+  clearSession?.();
+  window.location.href = "index.html";
+}
+
+function loadUsers(){
+  try { return JSON.parse(localStorage.getItem(USERS_KEY)) || {}; }
+  catch { return {}; }
+}
+function saveUsers(obj){
+  localStorage.setItem(USERS_KEY, JSON.stringify(obj || {}));
+}
+
+/* ---------- Per-user save helpers ---------- */
+const SAVE_NS = "voidmarket_save_v2"; // base namespace you used before
+
+function getActiveUsername() {
+  const s = getSession?.();
+  return s?.username || null;
+}
+
+/** Build a per-user storage key like: voidmarket_save_v2@alice */
+function userSaveKey(username) {
+  return `${SAVE_NS}@${username}`;
+}
+
+/** Optional: one-time migration from old global save to the first user who logs in */
+function migrateGlobalSaveIfAny(username) {
+  const old = localStorage.getItem(SAVE_NS);
+  const destKey = userSaveKey(username);
+  if (old && !localStorage.getItem(destKey)) {
+    localStorage.setItem(destKey, old);
+    // Keep the old global key in case you want to share; delete if you prefer:
+    // localStorage.removeItem(SAVE_NS);
+  }
+}
+
+function getSession(){
+  try{ return JSON.parse(localStorage.getItem(SESSION_KEY)); } catch{ return null; }
+}
+function requireSession(){
+  const s = getSession();
+  if(!s?.username){
+    // no active session -> back to login
+    window.location.href = "index.html";
+    return null;
+  }
+  return s;
+}
+function clearSession(){
+  try{ localStorage.removeItem(SESSION_KEY); }catch{}
+}
+
+
 const RARITY = {
   COMMON: "COMMON",
   RARE: "RARE",
@@ -61,27 +140,35 @@ const getBox     = (id) => DATA.boxes.find(b => b.id === id);
 const ratesToStr = (r) => `${r.COMMON}% C / ${r.RARE}% R / ${r.EPIC}% E / ${r.LEGENDARY}% L /  ${r.MYTHIC}% M`;
 
 // --- App State (localStorage) ---
-const STORE_KEY = "voidmarket_save_v2";
 let state = {
   coins: 0,
-  inventory: {
-    // id: { id, name, img, rarity, description, value, count }
-  }
+  inventory: {},
+  achievements: {} // keep achievements per user too
 };
 
-// --- Utils ---
-function save(){ localStorage.setItem(STORE_KEY, JSON.stringify(state)); }
-function load(){
-  try{
-    const raw = localStorage.getItem(STORE_KEY);
-    if(raw){
+function save() {
+  const u = getActiveUsername();
+  if (!u) return; // not logged in yet
+  localStorage.setItem(userSaveKey(u), JSON.stringify(state));
+}
+
+function load() {
+  const u = getActiveUsername();
+  if (!u) return;
+  migrateGlobalSaveIfAny(u);
+  try {
+    const raw = localStorage.getItem(userSaveKey(u));
+    if (raw) {
       const parsed = JSON.parse(raw);
-      if(parsed && typeof parsed === "object"){
+      if (parsed && typeof parsed === "object") {
         state = { ...state, ...parsed };
       }
     }
-  }catch(e){ console.warn("Load failed:", e); }
+  } catch (e) {
+    console.warn("Load failed:", e);
+  }
 }
+
 function fmt(num){ return new Intl.NumberFormat("en-US").format(num); }
 const $  = (sel) => document.querySelector(sel);
 const $$ = (sel) => document.querySelectorAll(sel);
@@ -374,16 +461,62 @@ function bindEvents(){
     if(e.target.id === "itemModal") closeItemModal();
   });
   $("#sellOneBtn").addEventListener("click", sellOne);
+
+  // Profile dropdown
+  const btn = document.getElementById("profileBtn");
+  const menu = document.getElementById("profileMenu");
+  if(btn && menu){
+    btn.addEventListener("click", (e)=>{
+      e.stopPropagation();
+      const open = !menu.classList.contains("hidden");
+      menu.classList.toggle("hidden", open);   // toggle
+      btn.setAttribute("aria-expanded", String(!open));
+    });
+    document.addEventListener("click", () => {
+      menu.classList.add("hidden");
+      btn.setAttribute("aria-expanded", "false");
+    });
+    menu.addEventListener("click", (e)=> e.stopPropagation());
+  }
+
+  // Logout
+  const logoutBtn = document.getElementById("logoutBtn");
+  if(logoutBtn){
+    logoutBtn.addEventListener("click", ()=>{
+      clearSession();
+      window.location.href = "index.html";
+    });
+  }
+
+  const delBtn = document.getElementById("deleteUserBtn");
+  if (delBtn) {
+    delBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      deleteCurrentUser();
+    });
+  }
+
+
 }
 
 function mount(){
+  const session = requireSession();   // <-- NEW (redirects to index.html if not logged in)
+  if(!session) return;
+
+  // fill profile UI
+  const uname = session.username;
+  const pn = document.getElementById("profileName");
+  const pu = document.getElementById("profileUser");
+  if(pn) pn.textContent = uname;
+  if(pu) pu.textContent = uname;
+
   load();
   firstRunBonuses();
-  renderMarket();                // dynamic (or fallback) market setup
+  renderMarket();
   updateCoins();
   renderInventory("ALL");
-  renderAchievements();
-  evaluateAchievements();
+  renderAchievements?.();   // if you added achievements earlier
+  evaluateAchievements?.(); // idem
   bindEvents();
 }
 
@@ -496,7 +629,7 @@ const ACHIEVEMENTS = [
     description: "Own all 7 items from the Beta Box at the same time.",
     icon: "assets/boxes/beta/beta-box.png",
     check: (st) => {
-      const beta = getBox("beta");
+      const beta = getBox("event");
       if (!beta) return false;
       // must have at least one of each item from normal.pool
       return beta.pool.every(it => st.inventory[it.id]?.count > 0);
