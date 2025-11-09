@@ -267,6 +267,18 @@ main{ max-width:1100px; margin:20px auto; padding:0 20px; }
 .menu-item.danger { border-color: transparent; background: #3a1f22; color: #fecaca; }
 .menu-item.danger:hover { background: #4a2327; color: #fee2e2; }
 
+/* Discord tab button */
+.discord-tab {
+  background: linear-gradient(90deg, #5865f2, #7289da);
+  color: white !important;
+  font-weight: 600;
+  border: none;
+  transition: filter 0.2s ease;
+}
+.discord-tab:hover {
+  filter: brightness(1.1);
+}
+
 /* Animations */
 @keyframes pop{ from{ transform: scale(.95); opacity: .6 } to{ transform: scale(1); opacity:1 } }
 @keyframes pulse{ 0%{ transform: scale(.9); opacity:.6 } 50%{ transform: scale(1); opacity:1 } 100%{ transform: scale(.9); opacity:.6 } }

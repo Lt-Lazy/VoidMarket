@@ -496,6 +496,13 @@ function bindEvents(){
     });
   }
 
+  // Discord button → opens invite in new tab
+  const discordBtn = document.getElementById("discordBtn");
+  if (discordBtn) {
+    discordBtn.addEventListener("click", () => {
+      window.open("https://discord.gg/MJDUbEBWuc", "_blank");
+    });
+  }
 
 }
 
