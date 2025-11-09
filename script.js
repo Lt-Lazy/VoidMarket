@@ -12,6 +12,11 @@
 const USERS_KEY   = (typeof window !== "undefined" && window.USERS_KEY)   ? window.USERS_KEY   : "vm_users_v1";
 const SESSION_KEY = (typeof window !== "undefined" && window.SESSION_KEY) ? window.SESSION_KEY : "vm_session_v1";
 
+const ITEM_TYPE = {
+  COLLECTIBLE: "COLLECTIBLE",
+  BOX: "BOX"
+};
+
 function deleteCurrentUser(){
   const sess = getSession?.();
   const uname = sess?.username;
@@ -35,7 +40,7 @@ function deleteCurrentUser(){
 
   // 3) Clear session and go back to login
   clearSession?.();
-  window.location.href = "index.html";
+  location.replace("index.html");
 }
 
 function loadUsers(){
@@ -77,7 +82,7 @@ function requireSession(){
   const s = getSession();
   if(!s?.username){
     // no active session -> back to login
-    window.location.href = "index.html";
+    location.replace("index.html");
     return null;
   }
   return s;
@@ -111,7 +116,7 @@ const DATA = {
         { id: "nl-al1", name: "Albino Grodr",      rarity: RARITY.RARE,      img: "assets/boxes/boxNormal/nl-al1.png", description: "Sea life 04: Albino Grodr, fresh water fish, branched and exiled from the Grodr fish because of their intimidating look, wouldnt hurt a fly...", value: 150 },
         { id: "nl-al2", name: "Albino Krap",       rarity: RARITY.EPIC,      img: "assets/boxes/boxNormal/nl-al2.png", description: "Sea life 05: Albino Krap, salt water fish, more fond of high temperate waters, Leaders of other Krap, swims fast, usually around others", value: 650 },
         { id: "nl-gw1", name: "Great White",       rarity: RARITY.LEGENDARY, img: "assets/boxes/boxNormal/nl-gw1.png", description: "Sea life 06: Great White, the king of the waters, hunts alone, not the top predator", value: 2300 },
-        { id: "nl-egw", name: "Elder Great White", rarity: RARITY.MYTHIC,    img: "assets/boxes/boxNormal/nl-egw.png", description: "Sea life 07: Elder Great White, leader of the shark family, the top predator", value: 2300 },
+        { id: "nl-egw", name: "Elder Great White", rarity: RARITY.MYTHIC,    img: "assets/boxes/boxNormal/nl-egw.png", description: "Sea life 07: Elder Great White, leader of the shark family, the top predator", value: 68000 },
 
       ]
     },
@@ -136,7 +141,7 @@ const DATA = {
       name: "Halloween 25 Box",
       price: 800,
       design: "assets/boxes/Halloween/hw25/HW2025.png",
-      rates: { COMMON: 60, RARE: 20, EPIC: 17, LEGENDARY: 3},
+      rates: { COMMON: 60, RARE: 20, EPIC: 16, LEGENDARY: 3, MYTHIC: 1 },
       pool: [
         { id: "hw25-sc1", name: "Scream",           rarity: RARITY.COMMON,    img: "assets/boxes/Halloween/hw25/hw25-sc1.png", description: "Halloween25 01: Scream Card, First item in the Halloween 2025 event box. Fun world!", value: 70 },
         { id: "hw25-gh1", name: "Ghost",            rarity: RARITY.COMMON,    img: "assets/boxes/Halloween/hw25/hw25-gh1.png", description: "Halloween25 02: Ghost, as scared of you as you are of them, have a little spirit!", value: 81 },
@@ -146,7 +151,7 @@ const DATA = {
         { id: "hw25-hau", name: "Haunted Painting", rarity: RARITY.LEGENDARY, img: "assets/boxes/Halloween/hw25/hw25-hau.png", description: "Halloween25 06: Haunted Painting, Seems a bit too late at night to have the lights on, dont you think?", value: 431000 },
       ]
     },
-    //  Add more boxes here (id, name, price, design, rates, pool)
+    
   ]
 };
 
@@ -247,12 +252,17 @@ function renderInventory(filter = "ALL"){
 }
 
 function switchTab(to){
+  // hide any open overlays when navigating
+  hideOpening();
+  hideReveal();
+
   $$(".tabpanel").forEach(el => el.classList.remove("active"));
   $$(".vm-tabs .tab").forEach(el => el.classList.remove("active"));
   document.getElementById(to).classList.add("active");
   $(`.vm-tabs .tab[data-tab="${to}"]`).classList.add("active");
-  if(to === "inventory") renderInventory($("#rarityFilter").value);
-  if(to === "achievements") renderAchievements();
+
+  if (to === "inventory") renderInventory($("#rarityFilter").value);
+  if (to === "achievements") renderAchievements?.();
 }
 
 /* ---------- Item Modal ---------- */
@@ -266,14 +276,22 @@ function openItemModal(itemId){
   $("#modalImg").src = it.img;
   $("#modalImg").alt = it.name;
   $("#modalName").textContent = it.name;
-  $("#modalRarity").textContent = it.rarity;
-  $("#modalRarity").setAttribute("data-rarity", it.rarity);
+
+  // Badge: use its rarity or "BOX"
+  $("#modalRarity").textContent = it.rarity || (it.type === ITEM_TYPE.BOX ? "BOX" : "");
+  $("#modalRarity").setAttribute("data-rarity", it.rarity || "COMMON");
+
   $("#modalCount").textContent = "x" + it.count;
-  $("#modalDesc").textContent = it.description || "No description.";
+  $("#modalDesc").textContent = it.description || (it.type === ITEM_TYPE.BOX ? "Unopened box." : "No description.");
   $("#modalValue").textContent = fmt(it.value || 0);
+
+  // Toggle actions
+  const openBtn = document.getElementById("openBoxBtn");
+  if (openBtn) openBtn.style.display = (it.type === ITEM_TYPE.BOX) ? "inline-block" : "none";
 
   $("#itemModal").classList.remove("hidden");
 }
+
 function closeItemModal(){
   $("#itemModal").classList.add("hidden");
   currentModalId = null;
@@ -410,8 +428,8 @@ function renderMarket(){
       actions.className = "card-actions";
       const btn = document.createElement("button");
       btn.className = "btn " + (box.id === "event" ? "accent" : "primary");
-      btn.textContent = `Open ${box.name}`;
-      btn.addEventListener("click", () => openBox(box.id));
+      btn.textContent = `Buy ${box.name}`;            // was "Open …"
+      btn.addEventListener("click", () => purchaseBox(box.id));
       actions.appendChild(btn);
 
       article.appendChild(media);
@@ -435,9 +453,89 @@ function renderMarket(){
 
     const openNormalBtn = document.getElementById("openNormal");
     const openEventBtn  = document.getElementById("openEvent");
-    if(openNormalBtn) openNormalBtn.addEventListener("click", () => openBox("normal"));
-    if(openEventBtn)  openEventBtn.addEventListener("click", () => openBox("event"));
+    if(openNormalBtn) openNormalBtn.addEventListener("click", () => purchaseBox("normal"));
+    if(openEventBtn)  openEventBtn.addEventListener("click", () => purchaseBox("event"));
   }
+}
+
+// Turn a DATA.boxes[] entry into an inventory record
+function makeBoxInventoryEntry(box){
+  return {
+    id: `box:${box.id}`,           // inventory key for this box type
+    name: box.name,
+    rarity: "BOX",                 // purely a label for UI badge
+    img: box.design,               // show your box art
+    description: "Unopened box. Open to reveal a collectible from this set.",
+    value: Math.round(box.price * 0.8), // resale value (tweak as you like)
+    type: ITEM_TYPE.BOX,
+    boxId: box.id,                 // needed to know which pool to roll from
+  };
+}
+
+// Buy a box: spend coins, receive ONE box in inventory
+function purchaseBox(boxId){
+  const box = getBox(boxId);
+  if(!box) return;
+
+  if(state.coins < box.price){
+    showToast("Not enough credits!");
+    return;
+  }
+  state.coins -= box.price;
+  updateCoins();
+
+  // add the box item to inventory
+  const key = `box:${box.id}`;
+  if(!state.inventory[key]){
+    state.inventory[key] = { ...makeBoxInventoryEntry(box), count: 1 };
+  } else {
+    state.inventory[key].count += 1;
+  }
+
+  save();
+  renderInventory($("#rarityFilter").value);
+  showToast(`${box.name} added to inventory.`);
+}
+
+function openBoxFromInventory(itemId){
+  const it = state.inventory[itemId];
+  if(!it || it.type !== ITEM_TYPE.BOX) return;
+  const box = getBox(it.boxId);
+  if(!box) return;
+
+  // show opening animation
+  showOpening(box.id);
+
+  // roll the result
+  const rarity = rollRarityFor(box);
+  const item = pickItem(box.pool, rarity);
+
+  setTimeout(() => {
+    // consume ONE box
+    it.count -= 1;
+    if(it.count <= 0) delete state.inventory[itemId];
+
+    // grant the rolled collectible
+    if(!state.inventory[item.id]){
+      state.inventory[item.id] = { ...item, type: ITEM_TYPE.COLLECTIBLE, count: 1 };
+    } else {
+      state.inventory[item.id].count += 1;
+    }
+
+    save();
+    renderInventory($("#rarityFilter").value);
+    hideOpening();
+    showReveal(item);
+
+    // (optional) telemetry
+    if (rarity === "EPIC" || rarity === "LEGENDARY") {
+      if (typeof sendCommunityEvent === "function") {
+        sendCommunityEvent(rarity, item.id, box.id);
+      }
+    }
+
+    evaluateAchievements?.(); // if you use achievements
+  }, 1100);
 }
 
 
@@ -499,7 +597,7 @@ function bindEvents(){
   if(logoutBtn){
     logoutBtn.addEventListener("click", ()=>{
       clearSession();
-      window.location.href = "index.html";
+      location.replace("index.html");
     });
   }
 
@@ -516,6 +614,16 @@ function bindEvents(){
   if (discordBtn) {
     discordBtn.addEventListener("click", () => {
       window.open("https://discord.gg/MJDUbEBWuc", "_blank");
+    });
+  }
+
+  const openBoxBtn = document.getElementById("openBoxBtn");
+  if (openBoxBtn) {
+    openBoxBtn.addEventListener("click", () => {
+      if (!currentModalId) return;
+      openBoxFromInventory(currentModalId);
+      // Close the modal; the reveal will show after animation
+      closeItemModal();
     });
   }
 

@@ -28,14 +28,14 @@
       location.replace("index.html");
     }
   })();
-
+  
 </script>
 
 </head>
 <body>
   <header class="vm-header">
     <div class="brand">
-      <img src="assets\boxes\beta\bta-sko.png" class="logo" alt="">
+      <img src="assets/boxes/beta/bta-sko.png" class="logo" alt="">
       <div>
         <h1>VoidMarket</h1>
         <p class="tag">Open boxes, collect art – all free.</p>
@@ -76,26 +76,6 @@
       
       <div id="marketCards" class="cards"></div>
 
-
-      <!-- Opening animation overlay -->
-      <div id="openingOverlay" class="opening hidden" aria-live="polite">
-        <div class="opening-box">
-          <img id="openingImg" src="" alt="Opening box" />
-          <div class="opening-pulse"></div>
-          <p class="opening-text">Opening...</p>
-        </div>
-      </div>
-
-      <!-- Reveal (result) -->
-      <div id="revealArea" class="reveal hidden" aria-live="polite">
-        <div class="sparkle"></div>
-        <img id="revealImg" src="" alt="You received" />
-        <div class="reveal-info">
-          <h3 id="revealName">You got an item!</h3>
-          <span id="revealTag" class="pill">RARITY</span>
-          <button id="revealClose" class="btn ghost">Close</button>
-        </div>
-      </div>
     </section>
 
     <!-- INVENTORY -->
@@ -145,6 +125,7 @@
               <strong id="modalValue">0</strong> Credit
             </div>
             <div class="modal-actions">
+              <button id="openBoxBtn" class="btn primary" style="display:none">Open box</button> 
               <button id="sellOneBtn" class="btn">Sell 1</button>
             </div>
           </div>
@@ -170,6 +151,25 @@
       </div>
     </section>
   </main>
+
+  <!-- GLOBAL overlays: show over any tab -->
+  <div id="openingOverlay" class="opening hidden" aria-live="polite">
+    <div class="opening-box">
+      <img id="openingImg" src="" alt="Opening box" />
+      <div class="opening-pulse"></div>
+      <p class="opening-text">Opening...</p>
+    </div>
+  </div>
+
+  <div id="revealArea" class="reveal hidden" aria-live="polite">
+    <div class="sparkle"></div>
+    <img id="revealImg" src="" alt="You received" />
+    <div class="reveal-info">
+      <h3 id="revealName">You got an item!</h3>
+      <span id="revealTag" class="pill">RARITY</span>
+      <button id="revealClose" class="btn ghost">Close</button>
+    </div>
+  </div>
 
   <footer class="vm-footer">
     <small>Built for fun – everything runs locally in your browser.</small>
