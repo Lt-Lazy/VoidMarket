@@ -121,7 +121,7 @@ const DATA = {
       ]
     },
     {
-      id: "event",
+      id: "beta",
       name: "Beta Box",
       price: 200,
       design: "assets/boxes/beta/beta-box.png",
@@ -753,16 +753,28 @@ const ACHIEVEMENTS = [
       return normal.pool.every(it => st.inventory[it.id]?.count > 0);
     }
   },
-    {
+  {
     id: "ach_fullset_beta",
     title: "Full Set: Beta",
     description: "Own all 7 items from the Beta Box at the same time.",
     icon: "assets/boxes/beta/beta-box.png",
     check: (st) => {
-      const beta = getBox("event");
+      const beta = getBox("beta");
       if (!beta) return false;
       // must have at least one of each item from normal.pool
       return beta.pool.every(it => st.inventory[it.id]?.count > 0);
+    }
+  },
+  {
+    id: "ach_fullset_hw25",
+    title: "Full Set: hw25",
+    description: "Own all 6 items from the Halloween 25 set at the same time.",
+    icon: "assets/boxes/Halloween/hw25/HW2025.png",
+    check: (st) => {
+      const HW25 = getBox("HW25");
+      if (!HW25) return false;
+      // must have at least one of each item from normal.pool
+      return HW25.pool.every(it => st.inventory[it.id]?.count > 0);
     }
   },
   {
