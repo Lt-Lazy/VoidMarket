@@ -133,7 +133,7 @@ const DATA = {
         { id: "bta-dvl", name: "Deep Void Lure",    rarity: RARITY.RARE,      img: "assets/boxes/beta/bta-dvl.png", description: "VoidQuest 04: Deep Void Lure, can only be fished or found in the deep lakes of a cave, not friendly to strangers", value: 480 },
         { id: "bta-bk1", name: "Blue Karp",         rarity: RARITY.EPIC,      img: "assets/boxes/beta/bta-bk1.png", description: "VoidQuest 05: Blue Karp, not many observations, in the Karp family, not seen with them", value: 847 },
         { id: "bta-noc", name: "Nocturne",          rarity: RARITY.EPIC,      img: "assets/boxes/beta/bta-noc.png", description: "VoidQuest 06: Nocturne, old wise man, legendary fisherman, known for catching a deep void lure and taming it as a pet", value: 761 },
-        { id: "bta-asf", name: "Ashfin",            rarity: RARITY.LEGENDARY, img: "assets/boxes/beta/bta-asf.png", description: "VoidQuest 07: Nocturne, Not much data, look based on observations around boiling clXx..ERROR404n4n1 ", value: 12530 },
+        { id: "bta-asf", name: "Ashfin",            rarity: RARITY.LEGENDARY, img: "assets/boxes/beta/bta-asf.png", description: "VoidQuest 07: Ashfin, Not much data, look based on observations around boiling clXx..ERROR404n4n1 ", value: 12530 },
       ]
     },
     {
