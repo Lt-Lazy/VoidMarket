@@ -133,7 +133,7 @@ const DATA = {
         { id: "bta-dvl", name: "Deep Void Lure",    rarity: RARITY.RARE,      img: "assets/boxes/beta/bta-dvl.png", description: "VoidQuest 04: Deep Void Lure, can only be fished or found in the deep lakes of a cave, not friendly to strangers", value: 480 },
         { id: "bta-bk1", name: "Blue Karp",         rarity: RARITY.EPIC,      img: "assets/boxes/beta/bta-bk1.png", description: "VoidQuest 05: Blue Karp, not many observations, in the Karp family, not seen with them", value: 847 },
         { id: "bta-noc", name: "Nocturne",          rarity: RARITY.EPIC,      img: "assets/boxes/beta/bta-noc.png", description: "VoidQuest 06: Nocturne, old wise man, legendary fisherman, known for catching a deep void lure and taming it as a pet", value: 761 },
-        { id: "bta-asf", name: "Ashfin",            rarity: RARITY.LEGENDARY, img: "assets/boxes/beta/bta-asf.png", description: "VoidQuest 07: Ashfin, Not much data, look based on observations around boiling clXx..ERROR404n4n1 ", value: 12530 },
+        { id: "bta-asf", name: "Ashfin",            rarity: RARITY.LEGENDARY, img: "assets/boxes/beta/bta-asf.png", description: "VoidQuest 07: Nocturne, Not much data, look based on observations around boiling clXx..ERROR404n4n1 ", value: 12530 },
       ]
     },
     {
@@ -145,12 +145,26 @@ const DATA = {
       pool: [
         { id: "hw25-sc1", name: "Scream",           rarity: RARITY.COMMON,    img: "assets/boxes/Halloween/hw25/hw25-sc1.png", description: "Halloween25 01: Scream Card, First item in the Halloween 2025 event box. Fun world!", value: 70 },
         { id: "hw25-gh1", name: "Ghost",            rarity: RARITY.COMMON,    img: "assets/boxes/Halloween/hw25/hw25-gh1.png", description: "Halloween25 02: Ghost, as scared of you as you are of them, have a little spirit!", value: 81 },
-        { id: "hw25-crw", name: "Scare Crow",       rarity: RARITY.RARE,      img: "assets/boxes/Halloween/hw25/hw25-crw.png", description: "Halloween25 03: Scare Crow, At first hand just a tool to protect crops, unless it moves..", value: 651 },
-        { id: "hw25-grs", name: "Grave Stone",      rarity: RARITY.EPIC,      img: "assets/boxes/Halloween/hw25/hw25-grs.png", description: "Halloween25 04: Grave Stone, we should hope that the neighbor grave looks better", value: 3800 },
+        { id: "hw25-crw", name: "Scare Crow",       rarity: RARITY.RARE,      img: "assets/boxes/Halloween/hw25/hw25-crw.png", description: "Halloween25 03: Scrare Crow, At first hand just a tool to protect crops, unless it moves..", value: 651 },
+        { id: "hw25-grs", name: "Grave Stone",      rarity: RARITY.EPIC,      img: "assets/boxes/Halloween/hw25/hw25-grs.png", description: "Halloween25 04: Scrare Crow, At first hand just a tool to protect crops, unless it moves..", value: 3800 },
         { id: "hw25-cul", name: "Suspicious Brew",  rarity: RARITY.LEGENDARY, img: "assets/boxes/Halloween/hw25/hw25-cul.png", description: "Halloween25 05: Suspicious Brew, around 12 ingredients, deep void lure is one of them...", value: 93000 },
         { id: "hw25-hau", name: "Haunted Painting", rarity: RARITY.LEGENDARY, img: "assets/boxes/Halloween/hw25/hw25-hau.png", description: "Halloween25 06: Haunted Painting, Seems a bit too late at night to have the lights on, dont you think?", value: 431000 },
       ]
     },
+
+    /* XMAS 
+    {
+      id: "XMAS25",
+      name: "Xmas 25 Box",
+      price: 1,
+      design: "assets/boxes/Xmas/xmas25/xmas2025.png",
+      rates: { COMMON: 63, RARE: 19, EPIC: 14, LEGENDARY: 3, MYTHIC: 1 },
+      pool: [
+        { id: "xmas25-cc1", name: "Candy Cane",  rarity: RARITY.COMMON,  img: "assets/boxes/Xmas/xmas25/xm25-cc1.png",   description: "Xmas25 01: Candy Cane Card, First item in the Xmas 2025 event box. No screaming in church!", value: 86 },
+        { id: "xmas25-sm2", name: "Snow Man",    rarity: RARITY.RARE,    img: "assets/boxes/Xmas/xmas25/xmas25-sm2.png", description: "Xmas25 02: Snow Man, The christmas spirit follows along with the snow man", value: 692 },
+
+      ]
+    },*/
     
   ]
 };
@@ -163,7 +177,8 @@ const ratesToStr = (r) => `${r.COMMON}% C / ${r.RARE}% R / ${r.EPIC}% E / ${r.LE
 let state = {
   coins: 0,
   inventory: {},
-  achievements: {} // keep achievements per user too
+  achievements: {},
+  featuredSlots: [null, null, null],
 };
 
 function save() {
@@ -203,20 +218,45 @@ function showToast(msg){
 function updateCoins(){ $("#coinCount").textContent = fmt(state.coins); }
 
 // ---------- Inventory render ----------
-function renderInventory(filter = "ALL"){
+function renderInventory(filter = "ALL", search = ""){
   const grid = $("#inventoryGrid");
   grid.innerHTML = "";
-  const all = Object.values(state.inventory);
-  const filtered = filter === "ALL" ? all : all.filter(x => x.rarity === filter);
 
-  if(filtered.length === 0){
-    $("#emptyInv").style.display = "block";
+  const all = Object.values(state.inventory);
+
+  // Først: rarity-filter
+  let filtered = (filter === "ALL")
+    ? all
+    : all.filter(x => x.rarity === filter);
+
+  // Så: tekst-søk på name + description
+  if (search && search.trim()) {
+    const q = search.trim().toLowerCase();
+    filtered = filtered.filter(x => {
+      const name = (x.name || "").toLowerCase();
+      const desc = (x.description || "").toLowerCase();
+      return name.includes(q) || desc.includes(q);
+    });
+  }
+
+  if (filtered.length === 0){
+    const emptyEl = $("#emptyInv");
+    if (emptyEl) {
+      if (all.length === 0) {
+        // Ingen items i det hele tatt
+        emptyEl.textContent = "No items yet – open a box in the Market!";
+      } else {
+        // Du har items, men ingenting matchet filter/søk
+        emptyEl.textContent = "No items match your filter/search.";
+      }
+      emptyEl.style.display = "block";
+    }
     return;
   } else {
     $("#emptyInv").style.display = "none";
   }
 
-  for(const it of filtered){
+  for (const it of filtered){
     const card = document.createElement("div");
     card.className = "item";
     card.dataset.itemId = it.id;
@@ -250,6 +290,14 @@ function renderInventory(filter = "ALL"){
     grid.appendChild(card);
   }
 }
+function getInventoryFilter(){
+  const el = $("#rarityFilter");
+  return el ? el.value : "ALL";
+}
+function getInventorySearch(){
+  const el = $("#invSearch");
+  return el ? el.value : "";
+}
 
 function switchTab(to){
   // hide any open overlays when navigating
@@ -261,8 +309,9 @@ function switchTab(to){
   document.getElementById(to).classList.add("active");
   $(`.vm-tabs .tab[data-tab="${to}"]`).classList.add("active");
 
-  if (to === "inventory") renderInventory($("#rarityFilter").value);
+  if (to === "inventory") renderInventory(getInventoryFilter(), getInventorySearch());
   if (to === "achievements") renderAchievements?.();
+  if (to === "profile") renderProfile?.();
 }
 
 /* ---------- Item Modal ---------- */
@@ -313,7 +362,7 @@ function sellOne(){
 
   save();
   updateCoins();
-  renderInventory($("#rarityFilter").value);
+  renderInventory(getInventoryFilter(), getInventorySearch());
   evaluateAchievements();
   showToast("Sold 1 for +" + fmt(it.value || 0) + " Credit ");
 }
@@ -383,7 +432,7 @@ function openBox(boxId){
       state.inventory[item.id].count += 1;
     }
     save();
-    renderInventory($("#rarityFilter").value);
+    renderInventory(getInventoryFilter(), getInventorySearch());
     evaluateAchievements();
 
     hideOpening();
@@ -493,7 +542,7 @@ function purchaseBox(boxId){
   }
 
   save();
-  renderInventory($("#rarityFilter").value);
+  renderInventory(getInventoryFilter(), getInventorySearch());
   showToast(`${box.name} added to inventory.`);
 }
 
@@ -523,7 +572,7 @@ function openBoxFromInventory(itemId){
     }
 
     save();
-    renderInventory($("#rarityFilter").value);
+    renderInventory(getInventoryFilter(), getInventorySearch());
     hideOpening();
     showReveal(item);
 
@@ -565,8 +614,16 @@ function bindEvents(){
 
   // Inventory filter
   $("#rarityFilter").addEventListener("change", (e) => {
-    renderInventory(e.target.value);
+    renderInventory(e.target.value, getInventorySearch());
   });
+
+  // Inventory search
+  const invSearch = $("#invSearch");
+  if (invSearch) {
+    invSearch.addEventListener("input", () => {
+      renderInventory(getInventoryFilter(), invSearch.value);
+    });
+  }
 
   // Item modal
   $("#itemModalClose").addEventListener("click", closeItemModal);
@@ -575,21 +632,13 @@ function bindEvents(){
   });
   $("#sellOneBtn").addEventListener("click", sellOne);
 
-  // Profile dropdown
-  const btn = document.getElementById("profileBtn");
-  const menu = document.getElementById("profileMenu");
-  if(btn && menu){
-    btn.addEventListener("click", (e)=>{
-      e.stopPropagation();
-      const open = !menu.classList.contains("hidden");
-      menu.classList.toggle("hidden", open);   // toggle
-      btn.setAttribute("aria-expanded", String(!open));
+  // Profile button 
+  const profileBtn = document.getElementById("profileBtn");
+  if (profileBtn) {
+    profileBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      switchTab("profile");
     });
-    document.addEventListener("click", () => {
-      menu.classList.add("hidden");
-      btn.setAttribute("aria-expanded", "false");
-    });
-    menu.addEventListener("click", (e)=> e.stopPropagation());
   }
 
   // Logout
@@ -627,6 +676,15 @@ function bindEvents(){
     });
   }
 
+  // Profile featured slot buttons in item modal
+  $$(".profile-slot-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const slot = parseInt(btn.dataset.slot, 10);
+      if (Number.isNaN(slot)) return;
+      setFeaturedFromModal(slot);
+    });
+  });
+
 }
 
 function mount(){
@@ -644,9 +702,10 @@ function mount(){
   firstRunBonuses();
   renderMarket();
   updateCoins();
-  renderInventory("ALL");
+  renderInventory("ALL", "");
   renderAchievements?.();   // if you added achievements earlier
   evaluateAchievements?.(); // idem
+  renderProfile?.(); 
   bindEvents();
 }
 
@@ -739,9 +798,29 @@ async function drawCommunityChart() {
   }, 60000);
 }
 
+function ensureFeaturedSlots(){
+  if (!Array.isArray(state.featuredSlots)) {
+    state.featuredSlots = [null, null, null];
+  }
+  return state.featuredSlots;
+}
+
+function setFeaturedFromModal(slotIndex){
+  ensureFeaturedSlots();
+  if (!currentModalId) return;
+
+  const item = state.inventory[currentModalId];
+  if (!item) return;
+
+  state.featuredSlots[slotIndex] = currentModalId;
+  save();
+  showToast(`Set to profile slot ${slotIndex + 1}`);
+  renderProfile?.();
+}
+
 /* -------------------- Achievements -------------------- */
 const ACHIEVEMENTS = [
-  {
+  { /* ------------- FULL SETS -------------- */
     id: "ach_fullset_standard",
     title: "Full Set: Standard",
     description: "Own all 7 items from the Standard Box at the same time.",
@@ -777,7 +856,20 @@ const ACHIEVEMENTS = [
       return HW25.pool.every(it => st.inventory[it.id]?.count > 0);
     }
   },
+  /* XMAS ACHIVEMENT
   {
+    id: "ach_fullset_xmas25",
+    title: "Full Set: xmas25",
+    description: "Own all 6 items from the Xmas 25 set at the same time.",
+    icon: "assets/boxes/Xmas/xmas25/xmas2025.png",
+    check: (st) => {
+      const HW25 = getBox("XMAS25");
+      if (!HW25) return false;
+      // must have at least one of each item from normal.pool
+      return HW25.pool.every(it => st.inventory[it.id]?.count > 0);
+    }
+  },*/
+  { /* ------------- RARITY -------------- */
     id: "ach_first_common",
     title: "First Common!",
     description: "Obtain any Common item.",
@@ -786,12 +878,20 @@ const ACHIEVEMENTS = [
   },
   {
     id: "ach_first_legendary",
-    title: "First Legendary!",
+    title: "Gold Gold Gold",
     description: "Obtain any Legendary item.",
     icon: "assets/achievements/achFirstLegendary.png",
     check: (st) => Object.values(st.inventory).some(x => x.rarity === RARITY.LEGENDARY)
   },
   {
+    id: "ach_legendary_fourth",
+    title: "Fourth!",
+    description: "Own four or more Legendary items at the same time.",
+    icon: "assets/achievements/achFourthLegendary.png",
+    check: (st) => Object.values(st.inventory)
+        .filter(x => x.rarity === "LEGENDARY").length >= 4
+  },
+  { /* ------------- CREDITS -------------- */
     id: "ach_1000_credits",
     title: "Around the block",
     description: "Reach 1 000 credits in your wallet.",
@@ -800,14 +900,14 @@ const ACHIEVEMENTS = [
   },
   {
     id: "ach_10000_credits",
-    title: "Collector",
+    title: "Pocket change",
     description: "Reach 10 000 credits in your wallet.",
     icon: "assets/achievements/achFirst10kCredits.png",  
     check: (st) => st.coins >= 10000
   },
   {
     id: "ach_50000_credits",
-    title: "Master Collector",
+    title: "Business",
     description: "Reach 50 000 credits in your wallet.",
     icon: "assets/achievements/achFirst50kCredits.png",  
     check: (st) => st.coins >= 50000
@@ -818,6 +918,54 @@ const ACHIEVEMENTS = [
     description: "Reach 100 000 credits in your wallet.",
     icon: "assets/achievements/achFirst100kCredits.png",  
     check: (st) => st.coins >= 100000
+  },
+  { /* ------------- BOXES -------------- */
+    id: "ach_first_box",
+    title: "First Box!",
+    description: "Purchase and open your first box.",
+    icon: "assets/boxes/common-box.png",
+    check: (st) => Object.values(st.inventory).some(x => x.type === "COLLECTIBLE")
+  },
+  {
+    id: "ach_box_hoarder10",
+    title: "Box Hoarder",
+    description: "Have 10 or more unopened boxes in your inventory.",
+    icon: "assets/achievements/achBoxHoarder10.png",
+    check: (st) => Object.values(st.inventory)
+        .filter(x => x.type === "BOX")
+        .reduce((a,b)=>a+b.count,0) >= 10
+  },
+  {
+    id: "ach_box_hoarder100",
+    title: "Box Collector!",
+    description: "Have 100 or more unopened boxes in your inventory.",
+    icon: "assets/achievements/achBoxHoarder100.png",
+    check: (st) => Object.values(st.inventory)
+        .filter(x => x.type === "BOX")
+        .reduce((a,b)=>a+b.count,0) >= 100
+  },
+  {
+    id: "ach_box_hoarder1000",
+    title: "Boxes!!",
+    description: "Have 1000 or more unopened boxes in your inventory.",
+    icon: "assets/achievements/achBoxHoarder1000.png",
+    check: (st) => Object.values(st.inventory)
+        .filter(x => x.type === "BOX")
+        .reduce((a,b)=>a+b.count,0) >= 1000
+  },
+  { /* ------------- ITEMS -------------- */
+    id: "ach_25_items",
+    title: "Collector apprentice",
+    description: "Own 25 items total in your inventory.",
+    icon: "assets/achievements/ach25Items.png",
+    check: (st) => Object.values(st.inventory).reduce((a,b)=>a+(b.count||0),0) >= 25
+  },
+  { 
+    id: "ach_50_items",
+    title: "Collector exam",
+    description: "Own 50 items total in your inventory.",
+    icon: "assets/achievements/ach50Items.png",
+    check: (st) => Object.values(st.inventory).reduce((a,b)=>a+(b.count||0),0) >= 50
   },
 ];
 
@@ -877,7 +1025,95 @@ function renderAchievements() {
   }
 }
 
+
+
 /* -------------------- Achievements END -------------------- */
+
+/* -------------------- PROFIL -------------------- */
+
+
+
+function renderProfile() {
+  const s = getSession?.();
+  const uname = s?.username || "Guest";
+
+  // Username
+  const userEl = document.getElementById("profileUsername");
+  if (userEl) userEl.textContent = uname;
+
+  // Created date (fra USERS_KEY i index.html)
+  let createdText = "Unknown";
+  try {
+    const users = loadUsers?.() || {};
+    const meta = users[uname];
+    if (meta?.createdAt) {
+      createdText = new Date(meta.createdAt).toLocaleString();
+    }
+  } catch {}
+  const createdEl = document.getElementById("profileCreatedAt");
+  if (createdEl) createdEl.textContent = createdText;
+
+  // Coins
+  const coinsEl = document.getElementById("profileCoins");
+  if (coinsEl) coinsEl.textContent = fmt(state.coins);
+
+  // Inventory stats
+  const inv = Object.values(state.inventory || {});
+  const totalItems = inv.reduce((sum, it) => sum + (it.count || 0), 0);
+  const boxesTotal = inv
+    .filter(it => it.type === ITEM_TYPE.BOX)
+    .reduce((sum, it) => sum + (it.count || 0), 0);
+  const collTotal = inv
+    .filter(it => it.type !== ITEM_TYPE.BOX)
+    .reduce((sum, it) => sum + (it.count || 0), 0);
+
+  const itemsEl = document.getElementById("profileItemsTotal");
+  if (itemsEl) itemsEl.textContent = totalItems;
+
+  const boxesEl = document.getElementById("profileBoxesTotal");
+  if (boxesEl) boxesEl.textContent = boxesTotal;
+
+  const collEl = document.getElementById("profileCollectiblesTotal");
+  if (collEl) collEl.textContent = collTotal;
+
+  // Achievements count
+  let achCount = 0;
+  try {
+    ensureAchievementState?.();
+    achCount = state.achievements ? Object.keys(state.achievements).length : 0;
+  } catch {}
+  const achEl = document.getElementById("profileAchCount");
+  if (achEl) achEl.textContent = `${achCount}/${ACHIEVEMENTS.length}`;
+
+  // Featured slots
+  const slots = ensureFeaturedSlots();
+  for (let i = 0; i < 3; i++) {
+    const slotId = slots[i];
+    const container = document.getElementById(`profileSlot${i + 1}`);
+    if (!container) continue;
+
+    const item = slotId ? state.inventory[slotId] : null;
+
+    if (!item) {
+      container.innerHTML = `
+        <div class="profile-feature-empty">
+          Empty slot<br><span> Slot ${i + 1}</span>
+        </div>
+      `;
+    } else {
+      container.innerHTML = `
+        <div class="profile-feature-slot-inner">
+          <img src="${item.img}" alt="${item.name}">
+          <div class="profile-feature-name">${item.name}</div>
+          <div class="muted" style="font-size:12px;">x${item.count || 1} • ${item.rarity}</div>
+        </div>
+      `;
+    }
+  }
+}
+
+
+/* -------------------- PROFIL END -------------------- */
 
 document.addEventListener("DOMContentLoaded", () => {
   mount();

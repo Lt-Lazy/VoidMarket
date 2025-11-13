@@ -139,6 +139,16 @@ main{ max-width:1100px; margin:20px auto; padding:0 20px; }
   background: var(--panel); border:1px solid var(--ring); color: var(--text);
   padding:8px 10px; border-radius:10px;
 }
+.search input{
+  background: var(--panel);
+  border:1px solid var(--ring);
+  color: var(--text);
+  padding:8px 10px;
+  border-radius:20px;
+  min-width: 180px;
+  margin: 2px;
+}
+
 .grid{
   display:grid; gap:14px; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
 }
@@ -276,10 +286,112 @@ main{ max-width:1100px; margin:20px auto; padding:0 20px; }
   font-weight: 600;
   border: none;
   transition: filter 0.2s ease;
+  border-radius: 3pc;
 }
 .discord-tab:hover {
-  filter: brightness(1.1);
+  filter: brightness(1.5);
 }
+
+/* Profile page */
+.profile-page{
+  display:grid;
+  gap:16px;
+}
+
+.profile-grid{
+  display:grid;
+  gap:16px;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+}
+
+.profile-card{
+  background: var(--card);
+  border:1px solid var(--ring);
+  border-radius: var(--radius);
+  padding:16px;
+  box-shadow: var(--shadow);
+}
+
+.profile-card h3{
+  margin:0 0 8px;
+}
+
+.profile-card p{
+  margin:4px 0;
+  font-size:14px;
+}
+
+.profile-actions{
+  margin-top:10px;
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+}
+
+.profile-danger{
+  border-color: rgba(239,68,68,.6);
+}
+
+/* Featured item slots */
+.profile-feature-grid{
+  display:grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap:10px;
+  margin-top:8px;
+}
+
+.profile-feature-slot{
+  min-height:110px;
+  border-radius:12px;
+  border:1px dashed var(--ring);
+  background: var(--panel);
+  padding:8px;
+  display:grid;
+  place-items:center;
+  text-align:center;
+}
+
+.profile-feature-slot-inner{
+  display:grid;
+  gap:6px;
+  justify-items:center;
+}
+
+.profile-feature-slot img{
+  width:64px;
+  height:64px;
+  object-fit:cover;
+  border-radius:10px;
+  border:1px solid var(--ring);
+  image-rendering:pixelated;
+}
+
+.profile-feature-name{
+  font-size:13px;
+}
+
+.profile-feature-empty{
+  font-size:12px;
+  color: var(--muted);
+}
+
+/* Modal profile slot buttons */
+.modal-profile-actions{
+  margin:8px 18px 14px 18px;
+  display:grid;
+  gap:6px;
+}
+
+.modal-profile-actions .small{
+  font-size:12px;
+}
+
+.profile-slot-buttons{
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+}
+
 
 /* Animations */
 @keyframes pop{ from{ transform: scale(.95); opacity: .6 } to{ transform: scale(1); opacity:1 } }

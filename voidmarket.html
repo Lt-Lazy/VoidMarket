@@ -44,29 +44,26 @@
 
     <div class="wallet">
       <div class="profile">
-        <button id="profileBtn" class="profile-btn" aria-haspopup="true" aria-expanded="false">
+        <button id="profileBtn" class="profile-btn">
           <span class="avatar">👤</span>
           <span id="profileName">Guest</span>
         </button>
-        <div id="profileMenu" class="profile-menu hidden" role="menu" aria-label="Profile">
-          <div class="pm-row"><strong id="profileUser">Guest</strong></div>
-          <button id="logoutBtn" class="menu-item" role="menuitem">Log out</button>
-          <button id="deleteUserBtn" class="menu-item danger" role="menuitem">Delete user…</button>
-        </div>
       </div>
       <div class="coins" title="Your coins">
         <strong id="coinCount">0</strong>
         <span>Credit</span>
       </div>
     </div>
+
   </header>
 
   <nav class="vm-tabs" role="tablist" aria-label="Navigation">
     <button class="tab active" data-tab="market">Market</button>
     <button class="tab" data-tab="inventory">Inventory</button>
+    <button class="tab" data-tab="profile">Profile</button>
     <button class="tab" data-tab="info">Info</button>
     <button class="tab" data-tab="achievements">Achievements</button>
-    <button id="discordBtn" class="tab discord-tab">Discord</button>
+    <button id="discordBtn" class="discord-tab">Discord</button>
   </nav>
 
   <main>
@@ -94,6 +91,11 @@
         </div>
       </div>
 
+      <div class="search">
+        <label for="invSearch">Search:</label>
+        <input id="invSearch" type="text" placeholder="Name, set or description..." />
+      </div>
+
       <div id="inventoryGrid" class="grid"></div>
       <p id="emptyInv" class="muted">No items yet – open a box in the Market!</p>
     </section>
@@ -104,6 +106,51 @@
         <h2>Achievements <span id="achCounter" class="ach-counter"></span></h2>
         <p class="muted">Locked achievements appear dimmed until you complete them.</p>
         <div id="achList" class="ach-list"></div>
+      </div>
+    </section>
+
+    <!-- PROFILE -->
+    <section id="profile" class="tabpanel" aria-labelledby="profile-tab">
+      <div class="profile-page">
+        <h2>Profile</h2>
+        <p class="muted">Local profile and save data for this browser.</p>
+
+        <div class="profile-grid">
+          <div class="profile-card">
+            <h3>Overview</h3>
+            <p><strong>Username:</strong> <span id="profileUsername">-</span></p>
+            <p><strong>Created:</strong> <span id="profileCreatedAt">-</span></p>
+            <p><strong>Coins:</strong> <span id="profileCoins">0</span> Credit</p>
+          </div>
+
+          <div class="profile-card">
+            <h3>Collection</h3>
+            <p><strong>Total items:</strong> <span id="profileItemsTotal">0</span></p>
+            <p><strong>Unopened boxes:</strong> <span id="profileBoxesTotal">0</span></p>
+            <p><strong>Collectibles:</strong> <span id="profileCollectiblesTotal">0</span></p>
+            <p><strong>Achievements unlocked:</strong> <span id="profileAchCount">0</span></p>
+          </div>
+
+          <!-- Featured items (3 slots) -->
+          <div class="profile-card">
+            <h3>Featured items</h3>
+            <p class="muted"><!-- Tekst inni featured items del --></p>
+            <div class="profile-feature-grid">
+              <div class="profile-feature-slot" id="profileSlot1"></div>
+              <div class="profile-feature-slot" id="profileSlot2"></div>
+              <div class="profile-feature-slot" id="profileSlot3"></div>
+            </div>
+          </div>
+
+          <div class="profile-card profile-danger">
+            <h3>Account</h3>
+            <p class="muted">These actions only affect this browser.</p>
+            <div class="profile-actions">
+              <button id="logoutBtn" class="btn ghost">Log out</button>
+              <button id="deleteUserBtn" class="btn danger">Delete user &amp; save</button>
+            </div>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -128,6 +175,14 @@
               <button id="openBoxBtn" class="btn primary" style="display:none">Open box</button> 
               <button id="sellOneBtn" class="btn">Sell 1</button>
             </div>
+            <div class="modal-profile-actions">
+              <span class="muted small">Show on profile:</span>
+              <div class="profile-slot-buttons">
+                <button class="btn ghost profile-slot-btn" data-slot="0">Slot 1</button>
+                <button class="btn ghost profile-slot-btn" data-slot="1">Slot 2</button>
+                <button class="btn ghost profile-slot-btn" data-slot="2">Slot 3</button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -139,8 +194,8 @@
 
         <h3>EVENTS</h3>
         <ul>
-          <li>Beta boxes: 09.09.25 - 10.01.26</li>
-          <li></li>
+          <li>To see active and upcoming events, join our discord!</li>
+          
         </ul>
 
 
