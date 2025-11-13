@@ -286,7 +286,7 @@ main{ max-width:1100px; margin:20px auto; padding:0 20px; }
   font-weight: 600;
   border: none;
   transition: filter 0.2s ease;
-  border-radius: 3pc;
+  border-radius: 30px;
 }
 .discord-tab:hover {
   filter: brightness(1.5);
