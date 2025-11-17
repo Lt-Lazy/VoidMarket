@@ -1,16 +1,47 @@
-/* =========================
-   VoidMarket – simple simulator (EN)
-   =========================
 
-   HOW TO ADD A NEW BOX NOW:
-   1) Push a new object into DATA.boxes (id, name, price, design, rates, pool)
-   2) If you have <div id="marketCards" class="cards"></div> in HTML, it will render automatically.
-      If you keep the old hard-coded cards, normal/event keep working; new boxes will just require the marketCards container to show.
-*/
 
 /* ---------- Local session (index.html sets this) ---------- */
 const USERS_KEY   = (typeof window !== "undefined" && window.USERS_KEY)   ? window.USERS_KEY   : "vm_users_v1";
 const SESSION_KEY = (typeof window !== "undefined" && window.SESSION_KEY) ? window.SESSION_KEY : "vm_session_v1";
+
+// ---------- Supabase client for game saves ----------
+const VM_APP_SUPABASE_URL = "https://vsasxahjavdstcrcsghg.supabase.co";
+const VM_APP_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZzYXN4YWhqYXZkc3RjcmNzZ2hnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMyNDI4MzgsImV4cCI6MjA3ODgxODgzOH0.g3DF07JppjF19-7FT7wNk--Ns7wbC83jcC-eZtjoiGs";
+
+let vmSupabase = null;
+if (typeof window !== "undefined" && window.supabase) {
+  vmSupabase = window.supabase.createClient(VM_APP_SUPABASE_URL, VM_APP_SUPABASE_ANON_KEY);
+}
+
+let profileMeta = null;
+
+// ---------- Global chat ----------
+let globalChatChannel = null;
+let globalChatBuffer = []; // siste meldinger i minnet
+
+async function fetchProfileMeta() {
+  const session = getSession?.();
+  const userId = session?.userId;
+  if (!vmSupabase || !userId) return;
+
+  try {
+    const { data, error } = await vmSupabase
+      .from("profiles")
+      .select("username, created_at")
+      .eq("id", userId)
+      .maybeSingle();
+
+    if (error) {
+      console.error("Supabase profile load error:", error);
+      return;
+    }
+
+    profileMeta = data || null;
+  } catch (e) {
+    console.error("Supabase profile exception:", e);
+  }
+}
+
 
 const ITEM_TYPE = {
   COLLECTIBLE: "COLLECTIBLE",
@@ -19,61 +50,40 @@ const ITEM_TYPE = {
 
 function deleteCurrentUser(){
   const sess = getSession?.();
-  const uname = sess?.username;
-  if(!uname) return;
+  const uname  = sess?.username;
+  const userId = sess?.userId;
 
+  if (!uname || !userId) {
+    alert("Could not find your current session. Please log in again.");
+    return;
+  }
+
+  // Første steg: forklar hvordan sletting fungerer
   const ok = confirm(
-    `Delete user "${uname}" and all local progress?\n\n` +
-    "This removes this profile and its saved inventory, coins, and achievements from this browser."
+    "If you want to delete your user data, you need to send a deletion request to the VoidMarket team.\n\n" +
+    "Press OK to open your email client with a pre-filled deletion request, or Cancel to go back."
   );
-  if(!ok) return;
 
-  // 1) Remove this user's save file
-  try { localStorage.removeItem(userSaveKey(uname)); } catch {}
+  if (!ok) return;
 
-  // 2) Remove the user from the local users store
-  const users = loadUsers();
-  if (users && users[uname]) {
-    delete users[uname];
-    saveUsers(users);
-  }
+  // Bygg en dummy-epost til VoidMarket-teamet
+  const subject = encodeURIComponent("VoidMarket deletion request");
+  const body = encodeURIComponent(
+    "Hi VoidMarket team,\n\n" +
+    "I would like to request deletion of my VoidMarket account and associated user data.\n\n" +
+    `Username: ${uname}\n` +
+    `User ID: ${userId}\n` +
+    "\nPlease delete my user data and saves associated with this account.\n\n" +
+    "Best regards,\n" +
+    uname
+  );
 
-  // 3) Clear session and go back to login
-  clearSession?.();
-  location.replace("index.html");
+  const mailto = `mailto:voidcrypt@hotmail.com?subject=${subject}&body=${body}`;
+
+  // Åpner standard e-postklient med ferdig utfylt mail
+  window.location.href = mailto;
 }
 
-function loadUsers(){
-  try { return JSON.parse(localStorage.getItem(USERS_KEY)) || {}; }
-  catch { return {}; }
-}
-function saveUsers(obj){
-  localStorage.setItem(USERS_KEY, JSON.stringify(obj || {}));
-}
-
-/* ---------- Per-user save helpers ---------- */
-const SAVE_NS = "voidmarket_save_v2"; // base namespace you used before
-
-function getActiveUsername() {
-  const s = getSession?.();
-  return s?.username || null;
-}
-
-/** Build a per-user storage key like: voidmarket_save_v2@alice */
-function userSaveKey(username) {
-  return `${SAVE_NS}@${username}`;
-}
-
-/** Optional: one-time migration from old global save to the first user who logs in */
-function migrateGlobalSaveIfAny(username) {
-  const old = localStorage.getItem(SAVE_NS);
-  const destKey = userSaveKey(username);
-  if (old && !localStorage.getItem(destKey)) {
-    localStorage.setItem(destKey, old);
-    // Keep the old global key in case you want to share; delete if you prefer:
-    // localStorage.removeItem(SAVE_NS);
-  }
-}
 
 function getSession(){
   try{ return JSON.parse(localStorage.getItem(SESSION_KEY)); } catch{ return null; }
@@ -161,7 +171,8 @@ const DATA = {
       rates: { COMMON: 63, RARE: 19, EPIC: 14, LEGENDARY: 3, MYTHIC: 1 },
       pool: [
         { id: "xmas25-cc1", name: "Candy Cane",  rarity: RARITY.COMMON,  img: "assets/boxes/Xmas/xmas25/xm25-cc1.png",   description: "Xmas25 01: Candy Cane Card, First item in the Xmas 2025 event box. No screaming in church!", value: 86 },
-        { id: "xmas25-sm2", name: "Snow Man",    rarity: RARITY.RARE,    img: "assets/boxes/Xmas/xmas25/xmas25-sm2.png", description: "Xmas25 02: Snow Man, The christmas spirit follows along with the snow man", value: 692 },
+        { id: "xmas25-sm2", name: "Snow Man",    rarity: RARITY.RARE,    img: "assets/boxes/Xmas/xmas25/xm25-sm2.png",   description: "Xmas25 02: Snow Man, The christmas spirit follows along with the snow man", value: 692 },
+        { id: "xmas25-ch3", name: "xmas hat",    rarity: RARITY.RARE,    img: "assets/boxes/Xmas/xmas25/xm25-ch3.png",   description: "Xmas25 03: Xmas hat, used by many or used by one merry man", value: 875 },
 
       ]
     },*/
@@ -181,28 +192,208 @@ let state = {
   featuredSlots: [null, null, null],
 };
 
-function save() {
-  const u = getActiveUsername();
-  if (!u) return; // not logged in yet
-  localStorage.setItem(userSaveKey(u), JSON.stringify(state));
+// ---------- Trading state ----------
+let currentTradeFriend = null;       // { id, username }
+let currentTradeOffer = {};          // { itemId: count }
+
+// Hjelp: vis / skjul trade-modal
+function showTradeModal(){
+  const el = document.getElementById("tradeModal");
+  if (el) el.classList.remove("hidden");
+}
+function hideTradeModal(){
+  const el = document.getElementById("tradeModal");
+  if (el) el.classList.add("hidden");
+  currentTradeFriend = null;
+  currentTradeOffer = {};
+  const err = document.getElementById("tradeError");
+  if (err) err.textContent = "";
 }
 
-function load() {
-  const u = getActiveUsername();
-  if (!u) return;
-  migrateGlobalSaveIfAny(u);
-  try {
-    const raw = localStorage.getItem(userSaveKey(u));
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (parsed && typeof parsed === "object") {
-        state = { ...state, ...parsed };
-      }
-    }
-  } catch (e) {
-    console.warn("Load failed:", e);
+// ---------- GLOBAL CHAT ----------
+
+function appendGlobalChatMessage(msg, scroll = true){
+  const list = document.getElementById("globalChatList");
+  if (!list || !msg) return;
+
+  globalChatBuffer.push(msg);
+  if (globalChatBuffer.length > 50) globalChatBuffer.shift();
+
+  const li = document.createElement("li");
+  li.className = "global-chat-message";
+
+  const t = new Date(msg.created_at || Date.now());
+  const timeSpan = document.createElement("span");
+  timeSpan.className = "global-chat-time";
+  timeSpan.textContent = t.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+
+  const textSpan = document.createElement("span");
+  textSpan.innerHTML = formatGlobalChatText(msg.text);
+
+  li.appendChild(timeSpan);
+  li.appendChild(textSpan);
+  list.appendChild(li);
+
+  if (scroll) {
+    list.scrollTop = list.scrollHeight;
   }
 }
+
+function renderGlobalChat(messages){
+  const list = document.getElementById("globalChatList");
+  if (!list) return;
+  list.innerHTML = "";
+  globalChatBuffer = [];
+  for (const m of messages) {
+    appendGlobalChatMessage(m, false);
+  }
+  list.scrollTop = list.scrollHeight;
+}
+
+async function initGlobalChat(){
+  if (!vmSupabase) return;
+
+  // 1) hent siste meldinger ved oppstart
+  try {
+    const { data, error } = await vmSupabase
+      .from("global_messages")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(50);
+
+    if (!error && data) {
+      renderGlobalChat(data.reverse());
+    } else if (error) {
+      console.error("initGlobalChat load error:", error);
+    }
+  } catch (e) {
+    console.error("initGlobalChat exception:", e);
+  }
+
+  // 2) Realtime subscription for INSERTS
+  try {
+    globalChatChannel = vmSupabase
+      .channel("global_messages_feed")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "global_messages" },
+        (payload) => {
+          // payload.new er raden som ble inserta
+          appendGlobalChatMessage(payload.new, true);
+        }
+      )
+      .subscribe((status) => {
+        console.log("global chat channel status:", status);
+      });
+  } catch (e) {
+    console.error("global chat subscribe error:", e);
+  }
+}
+
+function postUnboxGlobalMessage(username, rarity, item){
+  if (!vmSupabase || !item) return;
+  const rarityLabel = rarity.toLowerCase(); // "legendary"/"mythic"
+  const text = `${username} unboxed a ${rarityLabel} ${item.name}!`;
+
+  vmSupabase
+    .from("global_messages")
+    .insert({
+      type: "unbox",
+      username,
+      text,
+    })
+    .then(() => {})
+    .catch((e) => {
+      console.error("global chat insert error:", e);
+    });
+}
+
+function formatGlobalChatText(text){
+  if (!text) return "";
+
+  // sjekk for legendary / mythic (case insensitive)
+  const patterns = [
+    { key: "legendary", rarity: "LEGENDARY" },
+    { key: "mythic", rarity: "MYTHIC" }
+  ];
+
+  let out = text;
+
+  for (const p of patterns){
+    const regex = new RegExp(`\\b${p.key}\\b`, "i"); // matcher bare ordet
+    if (regex.test(out)){
+      out = out.replace(
+        regex,
+        `<span class="pill" data-rarity="${p.rarity}">${p.key}</span>`
+      );
+    }
+  }
+
+  return out;
+}
+
+
+// ---------- GLOBAL CHAT END ----------
+
+async function save() {
+  const session = getSession?.();
+  const userId = session?.userId;
+  if (!vmSupabase || !userId) return;
+
+  try {
+    const payload = {
+      coins: state.coins,
+      inventory: state.inventory,
+      achievements: state.achievements,
+      featured_slots: ensureFeaturedSlots()
+    };
+
+    const { error } = await vmSupabase
+      .from("saves")
+      .update(payload)
+      .eq("user_id", userId);
+
+    if (error) {
+      console.error("Supabase save error:", error);
+    }
+  } catch (e) {
+    console.error("Supabase save exception:", e);
+  }
+}
+
+async function load() {
+  const session = getSession?.();
+  const userId = session?.userId;
+  if (!vmSupabase || !userId) {
+    // Ingen Supabase tilgjengelig → vi gjør ingenting
+    return;
+  }
+
+  try {
+    const { data, error } = await vmSupabase
+      .from("saves")
+      .select("coins, inventory, achievements, featured_slots")
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    if (error) {
+      console.error("Supabase load error:", error);
+      return;
+    }
+
+    if (data) {
+      state.coins = data.coins ?? 0;
+      state.inventory = data.inventory || {};
+      state.achievements = data.achievements || {};
+      state.featuredSlots = Array.isArray(data.featured_slots)
+        ? data.featured_slots
+        : [null, null, null];
+    }
+  } catch (e) {
+    console.error("Supabase load exception:", e);
+  }
+}
+
 
 function fmt(num){ return new Intl.NumberFormat("en-US").format(num); }
 const $  = (sel) => document.querySelector(sel);
@@ -310,8 +501,12 @@ function switchTab(to){
   $(`.vm-tabs .tab[data-tab="${to}"]`).classList.add("active");
 
   if (to === "inventory") renderInventory(getInventoryFilter(), getInventorySearch());
-  if (to === "achievements") renderAchievements?.();
-  if (to === "profile") renderProfile?.();
+  if (to === "trading")  loadTrades?.();
+  if (to === "profile") {
+    renderProfile?.();
+    loadSocial?.();
+  }
+
 }
 
 /* ---------- Item Modal ---------- */
@@ -437,15 +632,16 @@ function openBox(boxId){
 
     hideOpening();
     showReveal(item);
+
+    const usernameForChat =
+      profileMeta?.username || getSession()?.username || "Someone";
+
+    if (rarity === RARITY.LEGENDARY || rarity === RARITY.MYTHIC) {
+      postUnboxGlobalMessage(usernameForChat, rarity, item);
+    }
+
   }, 1100);
 
-  // Telemetry: fire-and-forget
-  if (rarity === "EPIC" || rarity === "LEGENDARY") {
-    // Guard in case the function is ever missing
-    if (typeof sendCommunityEvent === "function") {
-      sendCommunityEvent(rarity, item.id, box.id);
-    }
-  }
 }
 
 
@@ -576,17 +772,16 @@ function openBoxFromInventory(itemId){
     hideOpening();
     showReveal(item);
 
-    // (optional) telemetry
-    if (rarity === "EPIC" || rarity === "LEGENDARY") {
-      if (typeof sendCommunityEvent === "function") {
-        sendCommunityEvent(rarity, item.id, box.id);
-      }
+    const usernameForChat =
+      profileMeta?.username || getSession()?.username || "Someone";
+
+    if (rarity === RARITY.LEGENDARY || rarity === RARITY.MYTHIC) {
+      postUnboxGlobalMessage(usernameForChat, rarity, item);
     }
 
     evaluateAchievements?.(); // if you use achievements
   }, 1100);
 }
-
 
 function firstRunBonuses(){
   if(Object.keys(state.inventory).length === 0 && state.coins === 0){
@@ -685,117 +880,75 @@ function bindEvents(){
     });
   });
 
+  // Social / friends
+  const addFriendBtn = document.getElementById("addFriendBtn");
+  const friendInput = document.getElementById("friendSearchInput");
+
+  if (addFriendBtn && friendInput) {
+    addFriendBtn.addEventListener("click", () => {
+      addFriendByName(friendInput.value);
+    });
+
+    friendInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        addFriendByName(friendInput.value);
+      }
+    });
+  }
+
+  const openTradingTabBtn = document.getElementById("openTradingTabBtn");
+  if (openTradingTabBtn) {
+    openTradingTabBtn.addEventListener("click", () => {
+      switchTab("trading");
+    });
+  }
+
+  // Trade modal buttons
+  const tradeSendBtn   = document.getElementById("tradeSendBtn");
+  const tradeCancelBtn = document.getElementById("tradeCancelBtn");
+  const tradeCloseBtn  = document.getElementById("tradeModalClose");
+
+  if (tradeSendBtn) {
+    tradeSendBtn.addEventListener("click", submitTrade);
+  }
+  if (tradeCancelBtn) {
+    tradeCancelBtn.addEventListener("click", hideTradeModal);
+  }
+  if (tradeCloseBtn) {
+    tradeCloseBtn.addEventListener("click", hideTradeModal);
+  }
+
 }
 
-function mount(){
-  const session = requireSession();   // <-- NEW (redirects to index.html if not logged in)
+async function mount(){
+  const session = requireSession();
   if(!session) return;
 
-  // fill profile UI
   const uname = session.username;
   const pn = document.getElementById("profileName");
   const pu = document.getElementById("profileUser");
   if(pn) pn.textContent = uname;
   if(pu) pu.textContent = uname;
 
-  load();
+  // 1) Last save-data
+  await load();
+
+  // 2) Hent profil-metadata (created_at)
+  await fetchProfileMeta();
+
+  // 3) Resten av oppstarten
   firstRunBonuses();
   renderMarket();
   updateCoins();
-  renderInventory("ALL", "");
-  renderAchievements?.();   // if you added achievements earlier
-  evaluateAchievements?.(); // idem
-  renderProfile?.(); 
+  renderInventory("ALL");
+  renderAchievements?.();
+  evaluateAchievements?.();
+  renderProfile?.();
+  loadSocial?.();
+  loadTrades?.();
+  initGlobalChat?.();
   bindEvents();
-}
-
-/* ---------- Community rare-drop reporting ---------- */
-const SUPABASE_URL = "https://kmvwakrearjltkocvoaq.supabase.co";
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imttdndha3JlYXJqbHRrb2N2b2FxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI2MjMyNTUsImV4cCI6MjA3ODE5OTI1NX0.2UHfcZpNu0DwJ7sgvQPJf3FuidYZb1iF5Sf7Di8Y0YM";
-
-// Fire-and-forget rare/legendary ping to Supabase
-async function sendCommunityEvent(rarity, itemId, boxId) {
-  try {
-    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    await fetch(`${SUPABASE_URL}/rest/v1/rare_drops`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "apikey": SUPABASE_KEY,
-        "Authorization": `Bearer ${SUPABASE_KEY}`,
-      },
-      body: JSON.stringify([{ rarity, item_id: itemId, box_id: boxId, tz }])
-    });
-  } catch (e) {
-    console.warn("Community ping failed", e);
-    // Do nothing else; never block the game on telemetry
-  }
-}
-
-async function fetchCommunityCounts() {
-  try {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/rare_counts_24h?select=bucket,rarity,drops`, {
-      headers: {
-        "apikey": SUPABASE_KEY,
-        "Authorization": `Bearer ${SUPABASE_KEY}`,
-      }
-    });
-    if (!res.ok) {
-      console.warn("community GET failed", res.status, await res.text());
-      return [];
-    }
-    return await res.json(); // [{bucket, rarity, drops}, ...]
-  } catch (e) {
-    console.warn("community GET error", e);
-    return [];
-  }
-}
-
-async function drawCommunityChart() {
-  const canvas = document.getElementById("communityChart");
-  if (!canvas || typeof Chart === "undefined") return;
-
-  const data = await fetchCommunityCounts();
-  if (!Array.isArray(data)) return;
-
-  const buckets = [...new Set(data.map(d => d.bucket))];
-  const by = (r) => buckets.map(b =>
-    data.find(d => String(d.bucket) === String(b) && d.rarity === r)?.drops || 0
-  );
-
-  // If there are zero labels, show a tiny placeholder so the canvas doesn't disappear
-  const labels = buckets.length ? buckets : ["No data yet"];
-  const epic = buckets.length ? by("EPIC") : [0];
-  const leg  = buckets.length ? by("LEGENDARY") : [0];
-
-  const chart = new Chart(canvas, {
-    type: "line",
-    data: {
-      labels,
-      datasets: [
-        { label: "EPIC", data: epic, borderColor: "#6d28d9" },
-        { label: "LEGENDARY", data: leg, borderColor: "#b45309" }
-      ]
-    },
-    options: {
-      animation: false,
-      responsive: true,
-      scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
-    }
-  });
-
-  setInterval(async () => {
-    const fresh = await fetchCommunityCounts();
-    const b2 = [...new Set(fresh.map(d => d.bucket))];
-    const labels2 = b2.length ? b2 : ["No data yet"];
-    const epic2 = b2.length ? b2.map(b => fresh.find(d => String(d.bucket) === String(b) && d.rarity === "EPIC")?.drops || 0) : [0];
-    const leg2  = b2.length ? b2.map(b => fresh.find(d => String(d.bucket) === String(b) && d.rarity === "LEGENDARY")?.drops || 0) : [0];
-
-    chart.data.labels = labels2;
-    chart.data.datasets[0].data = epic2;
-    chart.data.datasets[1].data = leg2;
-    chart.update();
-  }, 60000);
 }
 
 function ensureFeaturedSlots(){
@@ -1041,17 +1194,14 @@ function renderProfile() {
   const userEl = document.getElementById("profileUsername");
   if (userEl) userEl.textContent = uname;
 
-  // Created date (fra USERS_KEY i index.html)
+  // Created date (fra Supabase-profiler)
   let createdText = "Unknown";
-  try {
-    const users = loadUsers?.() || {};
-    const meta = users[uname];
-    if (meta?.createdAt) {
-      createdText = new Date(meta.createdAt).toLocaleString();
-    }
-  } catch {}
+  if (profileMeta?.created_at) {
+    createdText = new Date(profileMeta.created_at).toLocaleString();
+  }
   const createdEl = document.getElementById("profileCreatedAt");
   if (createdEl) createdEl.textContent = createdText;
+
 
   // Coins
   const coinsEl = document.getElementById("profileCoins");
@@ -1115,7 +1265,741 @@ function renderProfile() {
 
 /* -------------------- PROFIL END -------------------- */
 
+/* -------------------- SOCIAL / FRIENDS -------------------- */
+
+async function fetchFriends() {
+  const session = getSession?.();
+  const userId = session?.userId;
+  if (!vmSupabase || !userId) return [];
+
+  try {
+    // 1) hent friend-rader for deg
+    const { data: rows, error } = await vmSupabase
+      .from("friends")
+      .select("friend_id, created_at")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: true });
+
+    if (error) {
+      console.error("fetchFriends error:", error);
+      return [];
+    }
+    if (!rows || rows.length === 0) return [];
+
+    const friendIds = rows.map(r => r.friend_id);
+
+    // 2) hent profiler til alle vennene
+    const { data: profiles, error: profErr } = await vmSupabase
+      .from("profiles")
+      .select("id, username")
+      .in("id", friendIds);
+
+    if (profErr) {
+      console.error("fetchFriends profiles error:", profErr);
+      return [];
+    }
+
+    const byId = new Map((profiles || []).map(p => [p.id, p]));
+
+    // 3) slå sammen data
+    return rows.map(r => ({
+      id: r.friend_id,
+      username: byId.get(r.friend_id)?.username || "(no name)",
+      created_at: r.created_at
+    }));
+  } catch (e) {
+    console.error("fetchFriends exception:", e);
+    return [];
+  }
+}
+
+function renderFriendsList(friends) {
+  const listEl = document.getElementById("friendsList");
+  const msgEl = document.getElementById("socialMessage");
+  if (!listEl) return;
+
+  listEl.innerHTML = "";
+
+  if (!friends || friends.length === 0) {
+    if (msgEl && !msgEl.textContent) {
+      msgEl.textContent = "No friends yet – add someone by username.";
+    }
+    return;
+  }
+
+  for (const f of friends) {
+    const li = document.createElement("li");
+
+    const left = document.createElement("div");
+    left.className = "friend-name";
+    left.textContent = f.username;
+
+    const right = document.createElement("div");
+    right.className = "friend-meta";
+
+    const tradeBtn = document.createElement("button");
+    tradeBtn.className = "btn tiny";
+    tradeBtn.textContent = "Trade";
+    tradeBtn.addEventListener("click", () => openTradeWithFriend(f));
+
+    right.appendChild(tradeBtn);
+
+    li.appendChild(left);
+    li.appendChild(right);
+    listEl.appendChild(li);
+  }
+
+}
+
+async function addFriendByName(rawName) {
+  const name = (rawName || "").trim();
+  const msgEl = document.getElementById("socialMessage");
+  const inputEl = document.getElementById("friendSearchInput");
+
+  if (!name) {
+    if (msgEl) msgEl.textContent = "Type a username first.";
+    return;
+  }
+
+  const session = getSession?.();
+  const userId = session?.userId;
+  if (!vmSupabase || !userId) {
+    if (msgEl) msgEl.textContent = "Not connected – try reloading the page.";
+    return;
+  }
+
+  try {
+    // 1) Prøv eksakt match (uten wildcard)
+    let { data: target, error: profErr } = await vmSupabase
+      .from("profiles")
+      .select("id, username")
+      .eq("username", name)
+      .maybeSingle();
+
+    console.log("addFriend primary search result:", { target, profErr });
+
+    // 2) Hvis ingen rad: prøv en mer tolerant søk med wildcard
+    if (!target && !profErr) {
+      const { data: fallbackRows, error: fbErr } = await vmSupabase
+        .from("profiles")
+        .select("id, username")
+        .ilike("username", `%${name}%`)
+        .limit(1);
+
+      console.log("addFriend fallback search result:", { fallbackRows, fbErr });
+
+      if (!fbErr && fallbackRows && fallbackRows.length > 0) {
+        target = fallbackRows[0];
+      } else if (fbErr) {
+        profErr = fbErr;
+      }
+    }
+
+    if (profErr) {
+      console.error("addFriend profile error:", profErr);
+      if (msgEl) msgEl.textContent = "Error looking up user.";
+      return;
+    }
+
+    if (!target) {
+      if (msgEl) msgEl.textContent = `No user with username "${name}" found.`;
+      return;
+    }
+
+    if (target.id === userId) {
+      if (msgEl) msgEl.textContent = "You can't add yourself 🤝";
+      return;
+    }
+
+    // sjekk om allerede friend
+    const { data: existing, error: exErr } = await vmSupabase
+      .from("friends")
+      .select("id")
+      .eq("user_id", userId)
+      .eq("friend_id", target.id)
+      .maybeSingle();
+
+    if (exErr) {
+      console.error("addFriend existing error:", exErr);
+    }
+
+    if (existing) {
+      if (msgEl) msgEl.textContent = `${target.username} is already your friend.`;
+      return;
+    }
+
+    // legg til venn
+    const { error: insErr } = await vmSupabase
+      .from("friends")
+      .insert({
+        user_id: userId,
+        friend_id: target.id
+      });
+
+    if (insErr) {
+      console.error("addFriend insert error:", insErr);
+      if (msgEl) msgEl.textContent = "Could not add friend. Check your connection.";
+      return;
+    }
+
+    if (msgEl) msgEl.textContent = `Added ${target.username} as friend.`;
+    if (inputEl) inputEl.value = "";
+
+    // oppdater lista
+    const friends = await fetchFriends();
+    renderFriendsList(friends);
+  } catch (e) {
+    console.error("addFriend exception:", e);
+    if (msgEl) msgEl.textContent = "Unexpected error while adding friend.";
+  }
+}
+
+
+async function loadSocial() {
+  const friends = await fetchFriends();
+  renderFriendsList(friends);
+}
+
+function openTradeWithFriend(friend){
+  currentTradeFriend = friend;
+  currentTradeOffer = {};
+
+  const nameEl = document.getElementById("tradeFriendName");
+  if (nameEl) nameEl.textContent = friend.username;
+
+  renderTradeOfferPicker();
+  showTradeModal();
+}
+
+function renderTradeOfferPicker(){
+  const listEl = document.getElementById("tradeOfferList");
+  if (!listEl) return;
+
+  listEl.innerHTML = "";
+
+  const allItems = Object.values(state.inventory || {});
+  if (!allItems.length) {
+    const p = document.createElement("p");
+    p.className = "muted small";
+    p.textContent = "You don't have any items to trade yet.";
+    listEl.appendChild(p);
+    return;
+  }
+
+  for (const it of allItems) {
+    const row = document.createElement("div");
+    row.className = "trade-row";
+
+    const main = document.createElement("div");
+    main.className = "trade-row-main";
+
+    const name = document.createElement("div");
+    name.className = "trade-row-name";
+    name.textContent = it.name;
+
+    const meta = document.createElement("div");
+    meta.className = "trade-row-meta";
+    meta.textContent = `${it.rarity} • You own x${it.count}`;
+
+    main.appendChild(name);
+    main.appendChild(meta);
+
+    const controls = document.createElement("div");
+    controls.className = "trade-row-controls";
+
+    const minus = document.createElement("button");
+    minus.textContent = "−";
+    minus.className = "btn tiny";
+
+    const plus = document.createElement("button");
+    plus.textContent = "+";
+    plus.className = "btn tiny";
+
+    const badge = document.createElement("span");
+    badge.className = "trade-count-badge";
+    const selected = currentTradeOffer[it.id] || 0;
+    badge.textContent = "x" + selected;
+
+    minus.addEventListener("click", () => {
+      const cur = currentTradeOffer[it.id] || 0;
+      const next = Math.max(0, cur - 1);
+      if (next === 0) delete currentTradeOffer[it.id];
+      else currentTradeOffer[it.id] = next;
+      renderTradeOfferPicker();
+    });
+
+    plus.addEventListener("click", () => {
+      const cur = currentTradeOffer[it.id] || 0;
+      const owned = it.count || 0;
+      if (cur >= owned) return; // kan ikke sende mer enn du eier
+      currentTradeOffer[it.id] = cur + 1;
+      renderTradeOfferPicker();
+    });
+
+    controls.appendChild(minus);
+    controls.appendChild(badge);
+    controls.appendChild(plus);
+
+    row.appendChild(main);
+    row.appendChild(controls);
+    listEl.appendChild(row);
+  }
+}
+
+async function submitTrade(){
+  const msgEl = document.getElementById("tradeError");
+  if (msgEl) msgEl.textContent = "";
+
+  if (!currentTradeFriend) {
+    if (msgEl) msgEl.textContent = "No friend selected.";
+    return;
+  }
+
+  const session = getSession?.();
+  const userId = session?.userId;
+  if (!vmSupabase || !userId) {
+    if (msgEl) msgEl.textContent = "Not connected to server.";
+    return;
+  }
+
+  const itemIds = Object.keys(currentTradeOffer || {})
+    .filter(id => (currentTradeOffer[id] || 0) > 0);
+
+  if (!itemIds.length) {
+    if (msgEl) msgEl.textContent = "Select at least one item to send.";
+    return;
+  }
+
+  // bygg payload + sjekk inventory
+  const offerPayload = {};
+  for (const id of itemIds) {
+    const it = state.inventory[id];
+    if (!it) continue;
+    const sendCount = currentTradeOffer[id];
+
+    if (sendCount > (it.count || 0)) {
+      if (msgEl) msgEl.textContent = "You don't have enough of " + it.name + ".";
+      return;
+    }
+
+    offerPayload[id] = {
+      id: it.id,
+      name: it.name,
+      rarity: it.rarity,
+      img: it.img,
+      value: it.value,
+      count: sendCount,
+    };
+  }
+
+  try {
+    const fromUsername = session?.username || profileMeta?.username || "unknown";
+
+    const { error } = await vmSupabase
+      .from("trades")
+      .insert({
+        from_user_id: userId,
+        to_user_id: currentTradeFriend.id,
+        from_username: fromUsername,
+        to_username: currentTradeFriend.username,
+        offer: offerPayload,
+        status: "pending",
+      });
+
+    if (error) {
+      console.error("submitTrade insert error:", error);
+      if (msgEl) msgEl.textContent = "Could not send trade.";
+      return;
+    }
+
+    // trekk items ut av inventory lokalt
+    for (const id of itemIds) {
+      const sendCount = currentTradeOffer[id];
+      const it = state.inventory[id];
+      if (!it) continue;
+      it.count -= sendCount;
+      if (it.count <= 0) delete state.inventory[id];
+    }
+
+    await save();
+    renderInventory(getInventoryFilter(), getInventorySearch());
+    renderProfile?.();
+
+    hideTradeModal();
+    showToast("Trade sent to " + currentTradeFriend.username + "!");
+  } catch (e) {
+    console.error("submitTrade exception:", e);
+    if (msgEl) msgEl.textContent = "Unexpected error when sending trade.";
+  }
+}
+
+/* ---------- TRADES LIST / INBOX ---------- */
+
+async function fetchTradesForCurrentUser(){
+  const session = getSession?.();
+  const userId = session?.userId;
+  if (!vmSupabase || !userId) return [];
+
+  try {
+    const { data, error } = await vmSupabase
+      .from("trades")
+      .select("*")
+      .or(`from_user_id.eq.${userId},to_user_id.eq.${userId}`)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("fetchTrades error:", error);
+      return [];
+    }
+    return data || [];
+  } catch (e) {
+    console.error("fetchTrades exception:", e);
+    return [];
+  }
+}
+
+
+function summarizeTradeOffer(trade){
+  const offer = trade.offer || {};
+  const items = Object.values(offer);
+  if (!items.length) return "No items?";
+
+  const unique = items.length;
+  const total = items.reduce((sum, it) => sum + (it.count || 0), 0);
+  return `${unique} item(s) • x${total} total`;
+}
+
+function renderTradesLists(trades){
+  const session = getSession?.();
+  const myId = session?.userId;
+
+  const openInEl  = document.getElementById("openTradesIncoming");
+  const openOutEl = document.getElementById("openTradesOutgoing");
+  const histEl    = document.getElementById("tradeHistoryList");
+
+  if (openInEl)  openInEl.innerHTML  = "";
+  if (openOutEl) openOutEl.innerHTML = "";
+  if (histEl)    histEl.innerHTML    = "";
+
+  if (!myId) return;
+
+  const pendingIncoming = trades.filter(t => t.status === "pending" && t.to_user_id   === myId);
+  const pendingOutgoing = trades.filter(t => t.status === "pending" && t.from_user_id === myId);
+  const historyTrades   = trades.filter(t => t.status !== "pending");
+
+  // --- OPEN INCOMING ---
+  if (openInEl){
+    if (!pendingIncoming.length){
+      const p = document.createElement("p");
+      p.className = "muted small";
+      p.textContent = "No incoming trades.";
+      openInEl.appendChild(p);
+    } else {
+      for (const t of pendingIncoming){
+        const li = document.createElement("li");
+        li.className = "trade-row";
+
+        const main = document.createElement("div");
+        main.className = "trade-row-main";
+
+        const title = document.createElement("div");
+        title.className = "trade-row-name";
+        title.textContent = `From ${t.from_username || "unknown"}`;
+
+        const meta = document.createElement("div");
+        meta.className = "trade-row-meta";
+        const dateStr = t.created_at ? new Date(t.created_at).toLocaleString() : "";
+        meta.textContent = `${tradeItemsSummary(t)} • ${dateStr}`;
+
+        main.appendChild(title);
+        main.appendChild(meta);
+
+        const controls = document.createElement("div");
+        controls.className = "trade-row-controls";
+
+        const acceptBtn = document.createElement("button");
+        acceptBtn.className = "btn tiny";
+        acceptBtn.textContent = "Accept";
+        acceptBtn.addEventListener("click", () => acceptTrade(t));
+
+        const declineBtn = document.createElement("button");
+        declineBtn.className = "btn tiny";
+        declineBtn.textContent = "Decline";
+        declineBtn.addEventListener("click", () => declineTrade(t));
+
+        controls.appendChild(acceptBtn);
+        controls.appendChild(declineBtn);
+
+        li.appendChild(main);
+        li.appendChild(controls);
+        openInEl.appendChild(li);
+      }
+    }
+  }
+
+  // --- OPEN OUTGOING ---
+  if (openOutEl){
+    if (!pendingOutgoing.length){
+      const p = document.createElement("p");
+      p.className = "muted small";
+      p.textContent = "No outgoing trades.";
+      openOutEl.appendChild(p);
+    } else {
+      for (const t of pendingOutgoing){
+        const li = document.createElement("li");
+        li.className = "trade-row";
+
+        const main = document.createElement("div");
+        main.className = "trade-row-main";
+
+        const title = document.createElement("div");
+        title.className = "trade-row-name";
+        title.textContent = `To ${t.to_username || "unknown"}`;
+
+        const meta = document.createElement("div");
+        meta.className = "trade-row-meta";
+        const dateStr = t.created_at ? new Date(t.created_at).toLocaleString() : "";
+        meta.textContent = `${tradeItemsSummary(t)} • ${dateStr}`;
+
+        main.appendChild(title);
+        main.appendChild(meta);
+
+        const status = document.createElement("span");
+        status.className = "trade-row-meta";
+        status.textContent = "pending";
+
+        li.appendChild(main);
+        li.appendChild(status);
+        openOutEl.appendChild(li);
+      }
+    }
+  }
+
+  // --- HISTORY (alle ikke-pending, både inn og ut) ---
+  if (histEl){
+    if (!historyTrades.length){
+      const p = document.createElement("p");
+      p.className = "muted small";
+      p.textContent = "No trade history yet.";
+      histEl.appendChild(p);
+    } else {
+      for (const t of historyTrades){
+        const li = document.createElement("li");
+        li.className = "trade-row";
+
+        const main = document.createElement("div");
+        main.className = "trade-row-main";
+
+        const youAreSender = t.from_user_id === myId;
+        const otherName = youAreSender ? (t.to_username || "friend") : (t.from_username || "friend");
+        const dirText = youAreSender ? `To ${otherName}` : `From ${otherName}`;
+
+        const title = document.createElement("div");
+        title.className = "trade-row-name";
+        title.textContent = dirText;
+
+        const meta = document.createElement("div");
+        meta.className = "trade-row-meta";
+        const dateStr = t.created_at ? new Date(t.created_at).toLocaleString() : "";
+        meta.textContent = `${tradeItemsSummary(t)} • ${t.status} • ${dateStr}`;
+
+        main.appendChild(title);
+        main.appendChild(meta);
+
+        li.appendChild(main);
+        histEl.appendChild(li);
+      }
+    }
+  }
+}
+
+
+function tradeItemsSummary(trade, limit = 2){
+  const offer = trade.offer || {};
+  const items = Object.values(offer);
+  if (!items.length) return "No items";
+
+  const parts = items.map(it => {
+    const count = it.count || 0;
+    const name  = it.name  || "item";
+    return `x${count} ${name}`;
+  });
+
+  if (parts.length > limit){
+    const shown = parts.slice(0, limit).join(", ");
+    const more = parts.length - limit;
+    return `${shown} +${more} more`;
+  }
+  return parts.join(", ");
+}
+
+
+async function loadTrades(){
+  const trades = await fetchTradesForCurrentUser();
+  renderTradesLists(trades);
+}
+
+async function acceptTrade(trade){
+  const session = getSession?.();
+  const userId = session?.userId;
+  if (!vmSupabase || !userId) return;
+
+  try {
+    // prøv å sette status -> accepted, men bare hvis den fortsatt er pending
+    const { data, error } = await vmSupabase
+      .from("trades")
+      .update({ status: "accepted" })
+      .eq("id", trade.id)
+      .eq("to_user_id", userId)
+      .eq("status", "pending")
+      .select()
+      .maybeSingle();
+
+    if (error) {
+      console.error("acceptTrade update error:", error);
+      showToast("Could not accept trade.");
+      return;
+    }
+
+    if (!data) {
+      showToast("This trade was already handled.");
+      await loadTrades();
+      return;
+    }
+
+    const offer = data.offer || trade.offer || {};
+    const items = Object.values(offer);
+
+    // legg til items i inventory
+    for (const it of items) {
+      if (!it || !it.id) continue;
+      const existing = state.inventory[it.id];
+      const addCount = it.count || 0;
+
+      if (existing) {
+        existing.count = (existing.count || 0) + addCount;
+      } else {
+        state.inventory[it.id] = {
+          id: it.id,
+          name: it.name,
+          rarity: it.rarity,
+          img: it.img,
+          value: it.value,
+          count: addCount,
+        };
+      }
+    }
+
+    await save();
+    renderInventory(getInventoryFilter(), getInventorySearch());
+    renderProfile?.();
+    showToast(`Trade from ${data.from_username || trade.from_username || "friend"} accepted.`);
+
+    await loadTrades();
+  } catch (e) {
+    console.error("acceptTrade exception:", e);
+    showToast("Unexpected error when accepting trade.");
+  }
+}
+
+async function declineTrade(trade){
+  const session = getSession?.();
+  const userId = session?.userId;
+  if (!vmSupabase || !userId) return;
+
+  try {
+    // sett status -> declined, men bare hvis den fortsatt er pending
+    const { data, error } = await vmSupabase
+      .from("trades")
+      .update({ status: "declined" })
+      .eq("id", trade.id)
+      .eq("to_user_id", userId)
+      .eq("status", "pending")
+      .select()
+      .maybeSingle();
+
+    if (error) {
+      console.error("declineTrade error:", error);
+      showToast("Could not decline trade.");
+      return;
+    }
+
+    // Hvis data er null => ingen rad oppdatert (allerede håndtert)
+    if (!data) {
+      showToast("This trade was already handled.");
+      await loadTrades();
+      return;
+    }
+
+    // Her vet vi at vi nettopp gikk fra pending -> declined
+    // => gi items tilbake til sender
+    await restoreTradeItemsToSender(data);
+
+    showToast("Trade declined.");
+    await loadTrades();
+  } catch (e) {
+    console.error("declineTrade exception:", e);
+    showToast("Unexpected error when declining trade.");
+  }
+}
+
+
+async function restoreTradeItemsToSender(trade){
+  if (!vmSupabase || !trade || !trade.from_user_id) return;
+
+  try {
+    const senderId = trade.from_user_id;
+
+    const { data, error } = await vmSupabase
+      .from("saves")
+      .select("inventory")
+      .eq("user_id", senderId)
+      .maybeSingle();
+
+    if (error) {
+      console.error("restoreTradeItemsToSender load error:", error);
+      return;
+    }
+
+    const inv = data?.inventory || {};
+    const offer = trade.offer || {};
+    const items = Object.values(offer);
+
+    for (const it of items) {
+      if (!it || !it.id) continue;
+      const addCount = it.count || 0;
+      if (addCount <= 0) continue;
+
+      const existing = inv[it.id];
+      if (existing) {
+        existing.count = (existing.count || 0) + addCount;
+      } else {
+        inv[it.id] = {
+          id: it.id,
+          name: it.name,
+          rarity: it.rarity,
+          img: it.img,
+          value: it.value,
+          count: addCount,
+        };
+      }
+    }
+
+    const { error: updErr } = await vmSupabase
+      .from("saves")
+      .update({ inventory: inv })
+      .eq("user_id", senderId);
+
+    if (updErr) {
+      console.error("restoreTradeItemsToSender update error:", updErr);
+    }
+  } catch (e) {
+    console.error("restoreTradeItemsToSender exception:", e);
+  }
+}
+
+
+
 document.addEventListener("DOMContentLoaded", () => {
   mount();
-  drawCommunityChart();
 });

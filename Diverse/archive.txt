@@ -120,7 +120,7 @@ Happy Halloween event!
 Best Regards
 The VoidMarket team
 
-**=============Patch 1.1=============**
+**=============Patch 1.1 - Profile =============**
 
 Patch notes:
 - 7 new achievements 
@@ -131,19 +131,62 @@ Patch notes:
   * Item showcase
 - Better visual change 
   on discord button
-- 
+
+Here is the patch notes for todays update.
+
+Best Regards
+The VoidMarket team
+
+
+
+**=============Patch 1.2 - BETA =============**
+
+Patch notes:
+- Accounts in cloud (Access anywhere)
+- Account deletion request added
+- "VoidMarket" logo name changed to "VoidMarket BETA"
+- Friend system added
+- Trading system added
+- Global Feed added
+
+We got some feedback about the locally stored data,
+and knew the long term problems with storing and securing
+the collected items/boxes. So we moved from locally stored
+data to cloud. This, so collectors can access their accounts
+anywhere, and be sure that their collectibles are safe.
+
+Best Regards
+The VoidMarket team
+
+**=============Patch 1.2=============**
+(Next update in development)
+
+- Release date: 19.11.25 
+- Content: 
+	* Real cloud based user accounts
+	* Social system
+	* Trading system
+	* Global feed
+
+Best Regards
+The VoidMarket team
+
+
+
+============================UPDATES SLUTT============================
+
+================================NOTES================================
+
+- Skrive melding i global feed
+	insert into public.global_messages (type, username, text)
+	values ('info', 'SYSTEM', 'Double legendary chance for the next 30 minutes!');
 
 
 
 
 
 
-
-
-
-
-
-
+=============================NOTES SLUTT=============================
 
 
 

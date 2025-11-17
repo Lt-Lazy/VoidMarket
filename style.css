@@ -121,10 +121,11 @@ main{ max-width:1100px; margin:20px auto; padding:0 20px; }
   display:inline-block; padding:6px 10px; border-radius:999px; font-size:12px; letter-spacing:.4px;
   background:#22283a; border:1px solid var(--ring);
 }
-.pill[data-rarity="COMMON"]{ background: #1f2937; }
-.pill[data-rarity="RARE"]{ background: #0b7285; }
+.pill[data-rarity="COMMON"]{ background: #858f9e; }
+.pill[data-rarity="RARE"]{ background: #0037ff; }
 .pill[data-rarity="EPIC"]{ background: #6d28d9; }
 .pill[data-rarity="LEGENDARY"]{ background: #b45309; }
+.pill[data-rarity="MYTHIC"]{ background: #126000; }
 
 /* Sparkles */
 .sparkle{
@@ -286,7 +287,7 @@ main{ max-width:1100px; margin:20px auto; padding:0 20px; }
   font-weight: 600;
   border: none;
   transition: filter 0.2s ease;
-  border-radius: 30px;
+  border-radius: 3pc;
 }
 .discord-tab:hover {
   filter: brightness(1.5);
@@ -302,6 +303,7 @@ main{ max-width:1100px; margin:20px auto; padding:0 20px; }
   display:grid;
   gap:16px;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  align-items: flex-start; 
 }
 
 .profile-card{
@@ -392,6 +394,257 @@ main{ max-width:1100px; margin:20px auto; padding:0 20px; }
   gap:6px;
 }
 
+/* Social / friends */
+.social-add{
+  display:flex;
+  gap:8px;
+  margin:8px 0 4px;
+}
+
+.social-add input{
+  flex:1;
+  background: var(--panel);
+  border:1px solid var(--ring);
+  border-radius:10px;
+  padding:8px 10px;
+  color: var(--text);
+}
+
+.btn.small{
+  padding:6px 10px;
+  font-size:13px;
+  border-radius:10px;
+}
+
+.social-subheading{
+  margin:10px 0 6px;
+  font-size:13px;
+  font-weight:600;
+  color: var(--muted);
+}
+
+.friends-list{
+  list-style:none;
+  padding:0;
+  margin:0;
+  display:grid;
+  gap:6px;
+  max-height:180px;
+  overflow:auto;
+}
+
+.friends-list li{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  font-size:13px;
+  padding:6px 8px;
+  border-radius:10px;
+  background: var(--panel);
+  border:1px solid var(--ring);
+}
+
+.friends-list .friend-name{
+  font-weight:500;
+}
+
+.friends-list .friend-meta{
+  font-size:11px;
+  color: var(--muted);
+}
+
+.muted.small{
+  font-size:12px;
+}
+
+/* Social / friends --END-- */
+
+/* Trade modal */
+
+.modal-card.modal-wide{
+  max-width: 640px;
+}
+
+.trade-modal-body{
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+}
+
+.trade-offer-list{
+  margin-top:10px;
+  border-radius:16px;
+  border:1px solid var(--ring);
+  background:var(--panel);
+  max-height:260px;
+  overflow:auto;
+  padding:6px;
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+
+.trade-row{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:6px 8px;
+  border-radius:12px;
+  background:rgba(255,255,255,0.02);
+}
+
+.trade-row-main{
+  display:flex;
+  flex-direction:column;
+}
+
+.trade-row-name{
+  font-size:13px;
+  font-weight:500;
+}
+
+.trade-row-meta{
+  font-size:11px;
+  color:var(--muted);
+}
+
+.trade-row-controls{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  font-size:13px;
+}
+
+.trade-count-badge{
+  min-width:32px;
+  text-align:center;
+}
+
+.btn.tiny{
+  padding:3px 8px;
+  font-size:11px;
+  border-radius:999px;
+}
+
+.trade-actions{
+  display:flex;
+  justify-content:flex-end;
+  gap:8px;
+  margin-top:10px;
+}
+
+.trades-list{
+  list-style:none;
+  padding:0;
+  margin:4px 0 0;
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  max-height:200px;
+  overflow:auto;
+}
+
+/* Gjenbruker .trade-row / .trade-row-main / .trade-row-controls fra modal */
+.trades-list .trade-row{
+  cursor:default;
+}
+
+
+/* Trade modal END */
+
+/* Trading page */
+.trading-page{
+  max-width:960px;
+  margin:0 auto;
+  padding:16px 0;
+  display:flex;
+  flex-direction:column;
+  gap:16px;
+}
+
+.trading-grid{
+  display:grid;
+  grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);
+  gap:16px;
+}
+
+.trading-card{
+  background:var(--panel);
+  border-radius:20px;
+  padding:16px;
+  border:1px solid var(--ring);
+}
+
+@media (max-width:900px){
+  .trading-grid{
+    grid-template-columns:1fr;
+  }
+}
+
+/* Trading page END */
+
+/* Global CHAT */
+
+.global-chat{
+  position:fixed;
+  left:12px;
+  bottom:12px;
+  width:340px;        /* bredere */
+  height:220px;       /* fast høyde */
+  display:flex;
+  flex-direction:column;
+  backdrop-filter:blur(10px);
+  background:rgba(0,0,0,0.35);
+  border-radius:16px;
+  border:1px solid rgba(255,255,255,0.06);
+  font-size:12px;
+  z-index:50;
+}
+
+.global-chat-header{
+  padding:4px 8px;
+  font-size:11px;
+  text-transform:uppercase;
+  letter-spacing:0.08em;
+  color:var(--muted);
+  border-bottom:1px solid rgba(255,255,255,0.06);
+}
+
+.global-chat-list{
+  list-style:none;
+  margin:0;
+  padding:6px 8px 8px;
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+  overflow-y:auto;        /* scroll når det blir fullt */
+}
+
+.global-chat-message{
+  display:flex;
+  gap:4px;
+  align-items:flex-start;
+  white-space:normal;     /* tillat flere linjer */
+  overflow:visible;
+  text-overflow:clip;
+}
+
+.global-chat-time{
+  opacity:0.6;
+  min-width:40px;
+  font-feature-settings:"tnum";
+}
+
+.global-chat .pill{
+  display:inline-block;
+  padding:1px 6px;
+  border-radius:100px;
+  font-size:11px;
+  color:white;
+  text-transform:capitalize;
+}
+
+/* Global CHAT END */
 
 /* Animations */
 @keyframes pop{ from{ transform: scale(.95); opacity: .6 } to{ transform: scale(1); opacity:1 } }

@@ -6,7 +6,8 @@
   <title>VoidMarket – Collectibles & Digital Art</title>
   <link rel="stylesheet" href="style.css" />
 
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
 
   <script>
   (function guardAuth(){
@@ -37,7 +38,7 @@
     <div class="brand">
       <img src="assets/boxes/beta/bta-sko.png" class="logo" alt="">
       <div>
-        <h1>VoidMarket</h1>
+        <h1>VoidMarket BETA</h1>
         <p class="tag">Open boxes, collect art – all free.</p>
       </div>
     </div>
@@ -60,10 +61,10 @@
   <nav class="vm-tabs" role="tablist" aria-label="Navigation">
     <button class="tab active" data-tab="market">Market</button>
     <button class="tab" data-tab="inventory">Inventory</button>
+    <button class="tab" data-tab="trading">Trading</button>
     <button class="tab" data-tab="profile">Profile</button>
     <button class="tab" data-tab="info">Info</button>
     <button class="tab" data-tab="achievements">Achievements</button>
-    <!-- <button id="discordBtn" class="discord-tab">Discord</button> -->
   </nav>
 
   <main>
@@ -100,6 +101,33 @@
       <p id="emptyInv" class="muted">No items yet – open a box in the Market!</p>
     </section>
 
+    <!-- TRADING -->
+    <section id="trading" class="tabpanel" aria-labelledby="trading-tab">
+      <div class="trading-page">
+        <h2>Trading</h2>
+        <p class="muted">Manage your open trades and view your trade history.</p>
+
+        <div class="trading-grid">
+          <div class="trading-card">
+            <h3>Open trades</h3>
+            <p class="muted small">Incoming and outgoing trades that are still pending.</p>
+
+            <h4 class="social-subheading">Incoming</h4>
+            <ul id="openTradesIncoming" class="trades-list"></ul>
+
+            <h4 class="social-subheading">Outgoing</h4>
+            <ul id="openTradesOutgoing" class="trades-list"></ul>
+          </div>
+
+          <div class="trading-card">
+            <h3>History</h3>
+            <p class="muted small">Previously accepted or declined trades.</p>
+            <ul id="tradeHistoryList" class="trades-list"></ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- ACHIEVEMENTS -->
     <section id="achievements" class="tabpanel" aria-labelledby="achievements-tab">
       <div class="ach-wrap">
@@ -113,7 +141,7 @@
     <section id="profile" class="tabpanel" aria-labelledby="profile-tab">
       <div class="profile-page">
         <h2>Profile</h2>
-        <p class="muted">Local profile and save data for this browser.</p>
+        <p class="muted">Online profile and save data for your VoidMarket account.</p>
 
         <div class="profile-grid">
           <div class="profile-card">
@@ -142,9 +170,29 @@
             </div>
           </div>
 
+          <!-- Social (friends) -->
+          <div class="profile-card">
+            <h3>Social</h3>
+
+            <div class="social-add">
+              <input id="friendSearchInput" type="text" autocomplete="off" placeholder="Friend's username..." />
+              <button id="addFriendBtn" class="btn small">Add friend</button>
+            </div>
+
+            <p id="socialMessage" class="muted small"></p>
+
+            <h4 class="social-subheading">Your friends</h4>
+            <ul id="friendsList" class="friends-list"></ul>
+
+            <button id="openTradingTabBtn" class="btn small ghost" style="margin-top:8px;">
+              Open trading
+            </button>
+          </div>
+
+
           <div class="profile-card profile-danger">
             <h3>Account</h3>
-            <p class="muted">These actions only affect this browser.</p>
+            <p class="muted">Log out of this device, or request deletion of your user data.</p>
             <div class="profile-actions">
               <button id="logoutBtn" class="btn ghost">Log out</button>
               <button id="deleteUserBtn" class="btn danger">Delete user &amp; save</button>
@@ -188,20 +236,42 @@
       </div>
     </div>
 
+    <!-- TRADE MODAL -->
+    <div id="tradeModal" class="modal hidden" role="dialog" aria-modal="true" aria-label="Trade">
+      <div class="modal-card modal-wide">
+        <button id="tradeModalClose" class="modal-close" aria-label="Close">✕</button>
+
+        <div class="modal-body trade-modal-body">
+          <div class="modal-info">
+            <h3>Trade with <span id="tradeFriendName"></span></h3>
+            <p class="muted small">
+              Select which items you want to send. They’ll leave your collection as soon as you send the trade.
+            </p>
+
+            <div id="tradeOfferList" class="trade-offer-list">
+              <!-- Populeres fra script.js -->
+            </div>
+
+            <p id="tradeError" class="muted small"></p>
+
+            <div class="trade-actions">
+              <button id="tradeSendBtn" class="btn">Send trade</button>
+              <button id="tradeCancelBtn" class="btn ghost">Cancel</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- INFO -->
     <section id="info" class="tabpanel" aria-labelledby="info-tab">
       <div class="info">
 
         <h3>EVENTS</h3>
         <ul>
-          <li>To see active and upcoming events, join our discord!</li>
-          <button id="discordBtn" class="discord-tab">Discord</button>
+          <li>To see active and upcoming events, join our <button id="discordBtn" class="discord-tab">Discord!</button></li>
+          
         </ul>
-
-
-
-        <h3>Community Epic/Legendary-drop activity (last 24 h) ⚠️Chart under testing (Not real pulls)⚠️</h3>
-        <canvas id="communityChart" height="140"></canvas>
 
       </div>
     </section>
@@ -227,10 +297,19 @@
   </div>
 
   <footer class="vm-footer">
-    <small>Built for fun – everything runs locally in your browser.</small>
+    <small>Built by collectors, for collectors</small>
   </footer>
 
   <div id="toast" class="toast" aria-live="polite"></div>
+
+
+  <!-- GLOBAL CHAT -->
+  <div id="globalChat" class="global-chat" aria-label="Global feed">
+    <div class="global-chat-header">Global feed</div>
+    <ul id="globalChatList" class="global-chat-list">
+      <!-- messages -->
+    </ul>
+  </div>
 
   <script src="script.js"></script>
 </body>

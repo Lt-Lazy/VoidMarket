@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>VoidMarket – Sign in</title>
   <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
   <style>
     /* Page-specific tweaks (kept tiny to avoid touching your main CSS) */
     .auth-wrap{
@@ -45,94 +47,277 @@
 
       <form id="authForm" class="auth-form" autocomplete="off">
         <div class="row">
-          <label for="username">Username</label>
-          <input id="username" name="username" required minlength="3" maxlength="24" placeholder="Your name" />
+          <label for="username">Username (display name)</label>
+          <input id="username" name="username" minlength="3" maxlength="24" placeholder="Your name" />
+        </div>
+        <div class="row">
+          <label for="email">Email</label>
+          <input id="email" name="email" type="email" required placeholder="you@example.com" />
         </div>
         <div class="row">
           <label for="password">Password</label>
-          <input id="password" name="password" type="password" required minlength="4" maxlength="64" placeholder="••••••••" />
+          <input id="password" name="password" type="password" required minlength="6" maxlength="64" placeholder="••••••••" />
         </div>
         <div class="err" id="authErr"></div>
         <div class="auth-actions">
           <button type="button" id="loginBtn" class="btn primary">Sign in</button>
           <button type="button" id="registerBtn" class="btn accent">Create account</button>
         </div>
-        <div class="hint">All data is stored locally in your browser. No server, no cloud.</div>
+        <div class="hint">
+          Use your email and password to sign in. Username is your display name in-game (set it when you create your account, or change it on login if it was empty).
+        </div>
       </form>
+
     </div>
   </div>
 
   <script>
-    // ---- Local "Auth" (localStorage only) ----
-    const USERS_KEY = "vm_users_v1";
+    // ---- Supabase Auth (cloud) ----
     const SESSION_KEY = "vm_session_v1";
 
-    // Lightweight SHA-256 hashing to avoid storing plain text
-    async function sha256(str){
-      const enc = new TextEncoder().encode(str);
-      const buf = await crypto.subtle.digest("SHA-256", enc);
-      return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,"0")).join("");
-    }
+    const SUPABASE_URL = "https://vsasxahjavdstcrcsghg.supabase.co"; 
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZzYXN4YWhqYXZkc3RjcmNzZ2hnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMyNDI4MzgsImV4cCI6MjA3ODgxODgzOH0.g3DF07JppjF19-7FT7wNk--Ns7wbC83jcC-eZtjoiGs";
 
-    function loadUsers(){
-      try { return JSON.parse(localStorage.getItem(USERS_KEY)) || {}; }
-      catch { return {}; }
-    }
-    function saveUsers(obj){
-      localStorage.setItem(USERS_KEY, JSON.stringify(obj || {}));
-    }
-    function setSession(username){
-      localStorage.setItem(SESSION_KEY, JSON.stringify({ username, loginAt: Date.now() }));
-    }
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     function showError(msg){
       document.getElementById("authErr").textContent = msg || "";
     }
 
-    async function handleLogin(){
-      showError("");
+    function setSession(username, userId){
+      localStorage.setItem(SESSION_KEY, JSON.stringify({
+        username,
+        userId,
+        loginAt: Date.now()
+      }));
+    }
+
+    // Henter felt fra form
+    function getAuthInputs() {
       const username = document.getElementById("username").value.trim();
+      const email    = document.getElementById("email").value.trim();
       const password = document.getElementById("password").value;
+      return { username, email, password };
+    }
 
-      const users = loadUsers();
-      const user = users[username];
-      if(!user){ return showError("User not found. Create an account first. Name and pass is case sensitive!"); }
+    // Kun brukt ved registrering / første innlogging
+    async function createProfileAndSave(userId, username, email) {
+      // 1) Opprett profil (forventer at den ikke finnes fra før)
+      const { error: profErr } = await supabase
+        .from("profiles")
+        .insert({
+          id: userId,
+          username: username || null,
+          email: email || null
+        });
 
-      const hash = await sha256(password);
-      if(hash !== user.passHash){ return showError("Incorrect password."); }
+      if (profErr) {
+        console.error("profiles insert error", profErr);
+        throw profErr;
+      }
 
-      setSession(username);
+      // 2) Opprett tom save
+      const { error: saveErr } = await supabase
+        .from("saves")
+        .insert({
+          user_id: userId,
+          coins: 0,
+          inventory: {},
+          achievements: {},
+          featured_slots: []
+        });
+
+      if (saveErr) {
+        console.error("saves insert error", saveErr);
+        throw saveErr;
+      }
+    }
+
+    // Sørger for at det finnes en save-rad (brukes ved login)
+    async function ensureSaveRow(userId) {
+      const { data: saveRow, error: sErr } = await supabase
+        .from("saves")
+        .select("id")
+        .eq("user_id", userId)
+        .maybeSingle();
+
+      if (sErr) {
+        console.error("saves lookup error", sErr);
+        return;
+      }
+
+      if (!saveRow) {
+        const { error: saveInsertErr } = await supabase
+          .from("saves")
+          .insert({
+            user_id: userId,
+            coins: 0,
+            inventory: {},
+            achievements: {},
+            featured_slots: []
+          });
+        if (saveInsertErr) {
+          console.error("saves insert error", saveInsertErr);
+        }
+      }
+    }
+
+    // ---------- REGISTRERING ----------
+    async function handleRegister(){
+      showError("");
+
+      const { username, email, password } = getAuthInputs();
+
+      if (username.length < 3){
+        return showError("Username must be at least 3 characters.");
+      }
+      if (!email || !email.includes("@")) {
+        return showError("Please enter a valid email address.");
+      }
+      if (password.length < 6){
+        return showError("Password must be at least 6 characters.");
+      }
+
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password
+      });
+
+      if (error) {
+        console.error(error);
+        if (error.message.includes("User already registered")) {
+          return showError("An account with this email already exists.");
+        }
+        return showError(error.message || "Could not create account. Try again.");
+      }
+
+      const user    = data.user || null;
+      const session = data.session || null;
+
+      // Alltid gi feedback til spilleren
+      showError("Account created! Check your email and click the confirmation link, then sign in here.");
+
+      // Hvis prosjektet krever epost-verifisering får vi ofte IKKE en session her.
+      // Da stopper vi – profil/save opprettes ved første innlogging i stedet.
+      if (!session || !user) return;
+
+      // Hvis du IKKE krever epost-verifisering vil vi ha en session her,
+      // og da kan vi auto-logge inn spilleren som før:
+      try {
+        await createProfileAndSave(user.id, username, email);
+      } catch (e) {
+        // Om dette feiler pga RLS ell. viser vi i hvert fall en feilmelding
+        return showError("Account created, but could not initialize save. Try signing in again.");
+      }
+
+      setSession(username || email, user.id);
       window.location.href = "voidmarket.html";
     }
 
-    async function handleRegister(){
+    // ---------- LOGIN ----------
+    async function handleLogin(){
       showError("");
-      const username = document.getElementById("username").value.trim();
-      const password = document.getElementById("password").value;
 
-      if(username.length < 3){ return showError("Username must be at least 3 characters."); }
-      if(password.length < 4){ return showError("Password must be at least 4 characters."); }
+      const { username, email, password } = getAuthInputs();
 
-      const users = loadUsers();
-      if(users[username]){ return showError("That username is taken. Choose another."); }
+      if (!email || !password) {
+        return showError("Enter email and password.");
+      }
 
-      const passHash = await sha256(password);
-      users[username] = { passHash, createdAt: Date.now() };
-      saveUsers(users);
-      setSession(username);
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
+
+      if (error) {
+        console.error(error);
+        if (error.message.includes("Invalid login credentials")) {
+          return showError("Incorrect email or password.");
+        }
+        if (error.message.includes("Email not confirmed")) {
+          return showError("Please confirm your email first (check your inbox).");
+        }
+        return showError(error.message || "Could not sign in. Try again.");
+      }
+
+      const user = data.user;
+      if (!user) {
+        return showError("Login succeeded, but no user returned.");
+      }
+
+      let displayName = email;
+
+      // 1) Forsøk å hente profil
+      try {
+        const { data: prof, error: profErr } = await supabase
+          .from("profiles")
+          .select("username")
+          .eq("id", user.id)
+          .maybeSingle();
+
+        if (profErr) {
+          console.error("profile fetch error", profErr);
+          return showError("Could not load profile. Try again later.");
+        }
+
+        if (!prof) {
+          // Første gang denne brukeren logger inn → opprett profil + save nå
+          const initialName = (username && username.length >= 3) ? username : email;
+          try {
+            await createProfileAndSave(user.id, initialName, email);
+          } catch (e) {
+            console.error("createProfileAndSave on login error", e);
+            return showError("Could not create profile. Try again later.");
+          }
+          displayName = initialName;
+        } else {
+          // Profil finnes – hent username/fallback til epost
+          if (prof.username) {
+            displayName = prof.username;
+          } else if (username && username.length >= 3) {
+            displayName = username;
+            try {
+              const { error: upErr } = await supabase
+                .from("profiles")
+                .update({ username })
+                .eq("id", user.id);
+              if (upErr) {
+                console.error("profile update error", upErr);
+              }
+            } catch (e) {
+              console.error("profile update exception", e);
+            }
+          }
+        }
+      } catch (e) {
+        console.error("profile fetch exception", e);
+        return showError("Unexpected error loading profile.");
+      }
+
+      // 2) Sørg for at save-rad finnes
+      await ensureSaveRow(user.id);
+
+      // 3) Lag session og gå til spillet
+      setSession(displayName, user.id);
       window.location.href = "voidmarket.html";
     }
 
     document.getElementById("loginBtn").addEventListener("click", handleLogin);
     document.getElementById("registerBtn").addEventListener("click", handleRegister);
 
-    // If already logged in, go straight to the game
+    // Hvis session allerede finnes lokalt → hopp rett inn i spillet
     (function autoRedirectIfLoggedIn(){
       try{
         const sess = JSON.parse(localStorage.getItem(SESSION_KEY));
-        if(sess?.username){ window.location.href = "voidmarket.html"; }
+        if(sess?.username && sess?.userId){
+          window.location.href = "voidmarket.html";
+        }
       }catch{}
     })();
   </script>
+</body>
+</html>
+
+
 </body>
 </html>
