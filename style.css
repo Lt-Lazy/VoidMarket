@@ -89,9 +89,15 @@ main{ max-width:1100px; margin:20px auto; padding:0 20px; }
 
 /* Opening overlay (animation) */
 .opening{
-  position:fixed; inset:0; display:grid; place-items:center; background: rgba(0,0,0,.6);
+  position: fixed;
+  inset:0;
+  display:grid;
+  place-items:center;
+  background: rgba(0,0,0,0.6);
   padding:20px;
+  z-index: 50; 
 }
+
 .opening.hidden{ display:none; }
 .opening-box{ position:relative; display:grid; place-items:center; gap:10px; }
 .opening-box img{
@@ -107,8 +113,13 @@ main{ max-width:1100px; margin:20px auto; padding:0 20px; }
 
 /* Reveal Modal (result) */
 .reveal{
-  position: fixed; inset:0; display:grid; place-items:center; background: rgba(0,0,0,.6);
+  position: fixed;
+  inset:0;
+  display:grid;
+  place-items:center;
+  background: rgba(0,0,0,0.6); 
   padding:20px;
+  z-index: 60;
 }
 .reveal.hidden{ display:none; }
 .reveal img{

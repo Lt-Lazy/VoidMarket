@@ -172,6 +172,18 @@ Best Regards
 The VoidMarket team
 
 
+**=============Hotfix 1.2.1=============**
+23.11.25
+
+Patch notes:
+- New Interface design
+- Profile titles added
+- Draggable Global feed added
+- Player search (look-up) added
+
+Best Regards
+The VoidMarket team
+
 
 ============================UPDATES SLUTT============================
 
