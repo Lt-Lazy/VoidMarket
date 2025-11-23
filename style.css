@@ -239,6 +239,119 @@ main{ max-width:1100px; margin:20px auto; padding:0 20px; }
 .ach-item.locked{ opacity:.55; filter: grayscale(.6); }
 .ach-item.unlocked{ opacity:1; }
 
+/* Progress: Achievements + Titles */
+
+.ach-header-row{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-end;
+  gap:12px;
+}
+
+.ach-view-toggle{
+  display:flex;
+  gap:6px;
+}
+
+.ach-view-toggle .ach-view-btn{
+  border-radius:999px;
+  border:1px solid var(--ring);
+  background:var(--panel);
+  color:var(--muted);
+  font-size:12px;
+  padding:4px 10px;
+  cursor:pointer;
+}
+
+.ach-view-toggle .ach-view-btn.active{
+  color:var(--text);
+  background:var(--card);
+}
+
+/* Titles list */
+
+.title-list{
+  display:grid;
+  gap:12px;
+}
+
+.title-item{
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+  background:var(--card);
+  border:1px solid var(--ring);
+  border-radius:14px;
+  padding:10px 12px;
+}
+
+.title-item.locked{
+  opacity:.55;
+  filter:grayscale(.6);
+}
+
+.title-item .title-main h4{
+  margin:0 0 2px;
+}
+
+.title-item .title-main p{
+  margin:0;
+  color:var(--muted);
+}
+
+.title-item .title-meta{
+  margin-top:4px;
+  font-size:12px;
+  color:var(--muted);
+}
+
+/* Simple rarity accents */
+.title-item.title-common{border-color: #858f9e; }
+.title-item.title-rare{ border-color:#0037ff; }
+.title-item.title-epic{ border-color:#6d28d9; }
+.title-item.title-legendary{ border-color:#b45309; }
+.title-item.title-mythic{ border-color:#126000; }
+
+/* Profile: title card */
+
+.profile-card.profile-titles .title-current{
+  margin-bottom:6px;
+}
+
+.profile-card.profile-titles select{
+  width:100%;
+  margin:4px 0 6px;
+  background:var(--panel);
+  border:1px solid var(--ring);
+  color:var(--text);
+  padding:6px 8px;
+  border-radius:8px;
+}
+
+.profile-card.profile-titles .tiny{
+  font-size:11px;
+  color:var(--muted);
+}
+
+/* Header title chip */
+
+.profile-name-wrap{
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+  align-items:flex-start;
+}
+
+.profile-title-chip{
+  font-size:11px;
+  padding:2px 6px;
+  border-radius:999px;
+  border:1px solid var(--ring);
+  background:var(--panel);
+  color:var(--muted);
+}
+
+
 .ach-icon{
   width:44px; height:44px; display:grid; place-items:center;
   border-radius:12px; background:#1f2937; border:1px solid var(--ring);
@@ -551,6 +664,36 @@ main{ max-width:1100px; margin:20px auto; padding:0 20px; }
 
 
 /* Trade modal END */
+
+/* Public profile modal layout */
+.modal-profile-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.modal-profile-main h3 {
+  margin: 0 0 6px;
+}
+
+.modal-profile-main p {
+  margin: 2px 0;
+}
+
+.modal-profile-featured h4 {
+  margin: 0 0 4px;
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* På små skjermer: stack over hverandre */
+@media (max-width: 720px) {
+  .modal-profile-body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
 
 /* Trading page */
 .trading-page{

@@ -19,6 +19,160 @@ let profileMeta = null;
 let globalChatChannel = null;
 let globalChatBuffer = []; // siste meldinger i minnet
 
+const GLOBAL_CHAT_POS_KEY = "vm_globalChatPos_v1";
+const GLOBAL_CHAT_COLLAPSED_KEY = "vm_globalChatCollapsed_v1";
+
+function isMobileLayout(){
+  return window.matchMedia?.("(max-width: 720px)")?.matches ?? false;
+}
+
+function applyGlobalChatCollapsed(chat, collapsed){
+  if (!chat) return;
+  if (collapsed) chat.classList.add("collapsed");
+  else chat.classList.remove("collapsed");
+  try {
+    localStorage.setItem(
+      GLOBAL_CHAT_COLLAPSED_KEY,
+      JSON.stringify(!!collapsed)
+    );
+  } catch {}
+}
+
+function restoreGlobalChatCollapsed(chat){
+  try {
+    const raw = localStorage.getItem(GLOBAL_CHAT_COLLAPSED_KEY);
+    if (!raw) return;
+    const collapsed = JSON.parse(raw);
+    if (collapsed) chat.classList.add("collapsed");
+  } catch {}
+}
+
+function restoreGlobalChatPosition(chat){
+  if (!chat || isMobileLayout()) return;
+
+  try {
+    const raw = localStorage.getItem(GLOBAL_CHAT_POS_KEY);
+    if (!raw) return;
+    const pos = JSON.parse(raw);
+    if (typeof pos.left === "number" && typeof pos.top === "number") {
+      chat.style.left = pos.left + "px";
+      chat.style.top  = pos.top  + "px";
+      chat.style.bottom = "auto";
+    }
+  } catch {}
+}
+
+function saveGlobalChatPosition(chat){
+  if (!chat || isMobileLayout()) return;
+
+  const left = parseInt(chat.style.left, 10);
+  const top  = parseInt(chat.style.top, 10);
+  if (!Number.isFinite(left) || !Number.isFinite(top)) return;
+
+  try {
+    localStorage.setItem(
+      GLOBAL_CHAT_POS_KEY,
+      JSON.stringify({ left, top })
+    );
+  } catch {}
+}
+
+function setupGlobalChatUI(){
+  const chat   = document.getElementById("globalChat");
+  const header = chat?.querySelector(".global-chat-header");
+  const toggle = document.getElementById("globalChatToggle");
+  if (!chat || !header) return;
+
+  // start state
+  restoreGlobalChatPosition(chat);
+  restoreGlobalChatCollapsed(chat);
+
+  // toggle/minimize (PC + mobil)
+  if (toggle){
+    toggle.addEventListener("click", (ev) => {
+      ev.stopPropagation();
+      const collapsed = chat.classList.contains("collapsed");
+      applyGlobalChatCollapsed(chat, !collapsed);
+    });
+  }
+
+  // draggable på desktop
+  let dragging = false;
+  let offsetX = 0;
+  let offsetY = 0;
+
+  header.addEventListener("mousedown", (e) => {
+    if (isMobileLayout()) return;      // ikke draggable på mobil
+    if (e.button !== 0) return;        // bare venstreklikk
+
+    dragging = true;
+    const rect = chat.getBoundingClientRect();
+    offsetX = e.clientX - rect.left;
+    offsetY = e.clientY - rect.top;
+
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup", onUp);
+  });
+
+  function onMove(e){
+    if (!dragging) return;
+
+    let x = e.clientX - offsetX;
+    let y = e.clientY - offsetY;
+
+    const w = chat.offsetWidth;
+    const h = chat.offsetHeight;
+    const maxX = window.innerWidth  - w;
+    const maxY = window.innerHeight - h;
+
+    if (x < 0) x = 0;
+    if (y < 0) y = 0;
+    if (x > maxX) x = maxX;
+    if (y > maxY) y = maxY;
+
+    chat.style.left = x + "px";
+    chat.style.top  = y + "px";
+    chat.style.bottom = "auto";
+  }
+
+  function onUp(){
+    if (!dragging) return;
+    dragging = false;
+    document.removeEventListener("mousemove", onMove);
+    document.removeEventListener("mouseup", onUp);
+    saveGlobalChatPosition(chat);
+  }
+
+  // hvis man endrer vindu-størrelse: sørg for at chatten ikke havner utenfor skjermen
+  window.addEventListener("resize", () => {
+    if (isMobileLayout()){
+      // på mobil lar vi CSS styre posisjon
+      chat.style.left = "";
+      chat.style.top  = "";
+      chat.style.bottom = "";
+      return;
+    }
+
+    const rect = chat.getBoundingClientRect();
+    let x = rect.left;
+    let y = rect.top;
+    const w = rect.width;
+    const h = rect.height;
+    const maxX = window.innerWidth  - w;
+    const maxY = window.innerHeight - h;
+
+    if (x < 0) x = 0;
+    if (y < 0) y = 0;
+    if (x > maxX) x = maxX;
+    if (y > maxY) y = maxY;
+
+    chat.style.left = x + "px";
+    chat.style.top  = y + "px";
+    chat.style.bottom = "auto";
+    saveGlobalChatPosition(chat);
+  });
+}
+
 async function fetchProfileMeta() {
   const session = getSession?.();
   const userId = session?.userId;
@@ -27,7 +181,7 @@ async function fetchProfileMeta() {
   try {
     const { data, error } = await vmSupabase
       .from("profiles")
-      .select("username, created_at")
+      .select("username, created_at, current_title_id")
       .eq("id", userId)
       .maybeSingle();
 
@@ -37,6 +191,16 @@ async function fetchProfileMeta() {
     }
 
     profileMeta = data || null;
+
+    try {
+      ensureTitleState?.();
+      if (data.current_title_id && !state.currentTitleId) {
+        state.currentTitleId = data.current_title_id;
+      }
+    } catch {}
+
+    renderHeaderTitle?.();
+
   } catch (e) {
     console.error("Supabase profile exception:", e);
   }
@@ -251,6 +415,9 @@ function renderGlobalChat(messages){
 }
 
 async function initGlobalChat(){
+  // alltid sett opp UI (drag + toggle), selv om Supabase ikke finnes
+  setupGlobalChatUI();
+
   if (!vmSupabase) return;
 
   // 1) hent siste meldinger ved oppstart
@@ -289,6 +456,7 @@ async function initGlobalChat(){
     console.error("global chat subscribe error:", e);
   }
 }
+
 
 function postUnboxGlobalMessage(username, rarity, item){
   if (!vmSupabase || !item) return;
@@ -345,6 +513,8 @@ async function save() {
       coins: state.coins,
       inventory: state.inventory,
       achievements: state.achievements,
+      titles: state.titles,
+      current_title_id: state.currentTitleId || null,
       featured_slots: ensureFeaturedSlots()
     };
 
@@ -372,7 +542,7 @@ async function load() {
   try {
     const { data, error } = await vmSupabase
       .from("saves")
-      .select("coins, inventory, achievements, featured_slots")
+      .select("coins, inventory, achievements, titles, current_title_id, featured_slots")
       .eq("user_id", userId)
       .maybeSingle();
 
@@ -385,9 +555,13 @@ async function load() {
       state.coins = data.coins ?? 0;
       state.inventory = data.inventory || {};
       state.achievements = data.achievements || {};
+      state.titles = data.titles || {};
+      state.currentTitleId = data.current_title_id || null;
       state.featuredSlots = Array.isArray(data.featured_slots)
         ? data.featured_slots
         : [null, null, null];
+
+      ensureTitleState();
     }
   } catch (e) {
     console.error("Supabase load exception:", e);
@@ -882,7 +1056,8 @@ function bindEvents(){
 
   // Social / friends
   const addFriendBtn = document.getElementById("addFriendBtn");
-  const friendInput = document.getElementById("friendSearchInput");
+  const friendInput  = document.getElementById("friendSearchInput");
+  const viewProfileBtn = document.getElementById("viewProfileBtn");
 
   if (addFriendBtn && friendInput) {
     addFriendBtn.addEventListener("click", () => {
@@ -894,6 +1069,12 @@ function bindEvents(){
         e.preventDefault();
         addFriendByName(friendInput.value);
       }
+    });
+  }
+
+  if (viewProfileBtn && friendInput) {
+    viewProfileBtn.addEventListener("click", () => {
+      openPublicProfileByName(friendInput.value);
     });
   }
 
@@ -917,6 +1098,62 @@ function bindEvents(){
   }
   if (tradeCloseBtn) {
     tradeCloseBtn.addEventListener("click", hideTradeModal);
+  }
+
+  // Public profile modal
+  const publicProfileModal = document.getElementById("publicProfileModal");
+  const publicProfileClose = document.getElementById("publicProfileClose");
+
+  if (publicProfileClose) {
+    publicProfileClose.addEventListener("click", () => {
+      closePublicProfileModal();
+    });
+  }
+
+  if (publicProfileModal) {
+    publicProfileModal.addEventListener("click", (e) => {
+      if (e.target.id === "publicProfileModal") {
+        closePublicProfileModal();
+      }
+    });
+  }
+
+  // Progress view toggle (Achievements / Titles)
+  $$(".ach-view-btn[data-view]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const view = btn.dataset.view;
+      const achView = document.getElementById("achievementsView");
+      const titleView = document.getElementById("titlesView");
+
+      $$(".ach-view-btn[data-view]").forEach(b => {
+        b.classList.toggle("active", b === btn);
+      });
+
+      if (view === "titles") {
+        if (achView) achView.hidden = true;
+        if (titleView) titleView.hidden = false;
+      } else {
+        if (achView) achView.hidden = false;
+        if (titleView) titleView.hidden = true;
+      }
+    });
+  });
+
+  // Title select / clear buttons
+  const titleSelect = document.getElementById("titleSelect");
+  const clearTitleBtn = document.getElementById("clearTitleBtn");
+
+  if (titleSelect) {
+    titleSelect.addEventListener("change", () => {
+      setCurrentTitle(titleSelect.value || null);
+    });
+  }
+
+  if (clearTitleBtn) {
+    clearTitleBtn.addEventListener("click", () => {
+      setCurrentTitle(null);
+      if (titleSelect) titleSelect.value = "";
+    });
   }
 
 }
@@ -944,6 +1181,9 @@ async function mount(){
   renderInventory("ALL");
   renderAchievements?.();
   evaluateAchievements?.();
+  renderTitles?.();
+  evaluateTitles?.();
+  renderHeaderTitle?.();
   renderProfile?.();
   loadSocial?.();
   loadTrades?.();
@@ -1134,6 +1374,7 @@ function unlockAchievement(id){
     const a = ACHIEVEMENTS.find(x => x.id === id);
     showToast(`Achievement unlocked: ${a?.title || id}`);
     renderAchievements();
+    evaluateTitles(); 
   }
 }
 function evaluateAchievements(){
@@ -1143,6 +1384,7 @@ function evaluateAchievements(){
       unlockAchievement(a.id);
     }
   }
+  evaluateTitles(); 
 }
 
 function renderAchievements() {
@@ -1181,6 +1423,226 @@ function renderAchievements() {
 
 
 /* -------------------- Achievements END -------------------- */
+
+/* -------------------- Titles -------------------- */
+
+const TITLES = [
+  {
+    id: "title_fresh_collector",
+    name: "Fresh Collector",
+    description: "You joined VoidMarket.",
+    rarity: "COMMON",
+    // alltid tilgjengelig
+    check: (st) => true
+  },
+  {
+    id: "title_box_hoarder",
+    name: "Box Hoarder",
+    description: "For collectors who keep boxes sealed.",
+    rarity: "RARE",
+    requiresAchievements: ["ach_box_hoarder10"]
+  },
+  {
+    id: "title_standard_archivist",
+    name: "Standard Archivist",
+    description: "Completed the Standard Box set.",
+    rarity: "RARE",
+    requiresAchievements: ["ach_fullset_standard"]
+  },
+  {
+    id: "title_gold_seeker",
+    name: "Gold Seeker",
+    description: "Obtained at least one Legendary item.",
+    rarity: "RARE",
+    requiresAchievements: ["ach_first_legendary"]
+  },
+  {
+    id: "title_wealthy",
+    name: "Wealthy",
+    description: "Reached 100 000 credits in your wallet.",
+    rarity: "LEGENDARY",
+    requiresAchievements: ["ach_100000_credits"]
+  }
+];
+
+function getTitleLabelById(id) {
+  if (!id) return "No title equipped";
+  const t = TITLES.find(x => x.id === id);
+  return t ? t.name : id;
+}
+
+function renderTitles(){
+  ensureTitleState();
+  const listEl = document.getElementById("titleList");
+  const counterEl = document.getElementById("titleCounter");
+  if (!listEl) return;
+
+  const unlocked = state.titles || {};
+  const unlockedIds = Object.keys(unlocked);
+  const unlockedSet = new Set(unlockedIds);
+
+  const html = TITLES.map(t => {
+    const isUnlocked = unlockedSet.has(t.id);
+    const cls = [
+      "title-item",
+      isUnlocked ? "unlocked" : "locked",
+      t.rarity ? ("title-" + t.rarity.toLowerCase()) : ""
+    ].join(" ");
+
+    const unlockText = isUnlocked
+      ? "Unlocked: " + new Date(unlocked[t.id]).toLocaleString()
+      : (t.hint || "Unlock this title by progressing in VoidMarket.");
+
+    return `
+      <article class="${cls}">
+        <div class="title-main">
+          <h4>${t.name}</h4>
+          <p>${t.description || ""}</p>
+        </div>
+        <div class="title-meta">${unlockText}</div>
+      </article>
+    `;
+  }).join("");
+
+  listEl.innerHTML = html;
+
+  if (counterEl) {
+    counterEl.textContent = `${unlockedIds.length}/${TITLES.length}`;
+  }
+
+  populateTitleSelect();
+}
+
+function populateTitleSelect(){
+  ensureTitleState();
+  const select = document.getElementById("titleSelect");
+  const label  = document.getElementById("currentTitleLabel");
+  if (!select) return;
+
+  const unlocked = state.titles || {};
+  const unlockedSet = new Set(Object.keys(unlocked));
+
+  select.innerHTML = "";
+
+  const optNone = document.createElement("option");
+  optNone.value = "";
+  optNone.textContent = "No title";
+  select.appendChild(optNone);
+
+  for (const t of TITLES) {
+    if (!unlockedSet.has(t.id)) continue;
+    const opt = document.createElement("option");
+    opt.value = t.id;
+    opt.textContent = t.name;
+    select.appendChild(opt);
+  }
+
+  select.value = state.currentTitleId || "";
+
+  if (label) {
+    if (state.currentTitleId) {
+      const t = TITLES.find(x => x.id === state.currentTitleId);
+      label.textContent = t ? t.name : state.currentTitleId;
+    } else {
+      label.textContent = "No title equipped";
+    }
+  }
+
+  renderHeaderTitle?.();
+}
+
+function renderHeaderTitle(){
+  ensureTitleState();
+  const chip = document.getElementById("profileTitleChip");
+  if (!chip) return;
+
+  if (state.currentTitleId) {
+    const t = TITLES.find(x => x.id === state.currentTitleId);
+    chip.textContent = t ? t.name : state.currentTitleId;
+    chip.style.display = "";
+  } else {
+    chip.textContent = "";
+    chip.style.display = "none";
+  }
+}
+
+function ensureTitleState(){
+  if (!state.titles) state.titles = {};        // id -> timestamp
+  if (typeof state.currentTitleId === "undefined") {
+    state.currentTitleId = null;
+  }
+}
+
+function isTitleUnlocked(id){
+  ensureTitleState();
+  return !!state.titles[id];
+}
+
+function unlockTitle(id){
+  ensureTitleState();
+  if (state.titles[id]) return;
+
+  state.titles[id] = Date.now();
+  save();
+  const t = TITLES.find(x => x.id === id);
+  showToast?.(`New title unlocked: ${t?.name || id}`);
+  renderTitles?.();
+  renderProfile?.();
+  renderHeaderTitle?.();
+}
+
+function evaluateTitles(){
+  ensureAchievementState?.();
+  ensureTitleState();
+  const st = state;
+
+  for (const t of TITLES) {
+    if (isTitleUnlocked(t.id)) continue;
+
+    let ok = false;
+
+    if (Array.isArray(t.requiresAchievements) && t.requiresAchievements.length) {
+      ok = t.requiresAchievements.every(aid => isAchUnlocked(aid));
+    }
+
+    if (!ok && typeof t.check === "function") {
+      ok = !!t.check(st);
+    }
+
+    if (ok) {
+      unlockTitle(t.id);
+    }
+  }
+
+  renderTitles?.();
+}
+
+async function setCurrentTitle(id){
+  ensureTitleState();
+  if (id && !isTitleUnlocked(id)) {
+    console.warn("Tried to equip locked title:", id);
+    return;
+  }
+
+  state.currentTitleId = id || null;
+  save();
+  renderHeaderTitle();
+  renderProfile?.();
+  populateTitleSelect();
+
+  const session = getSession?.();
+  const userId = session?.userId;
+  if (vmSupabase && userId) {
+    try {
+      await vmSupabase
+        .from("profiles")
+        .update({ current_title_id: state.currentTitleId })
+        .eq("id", userId);
+    } catch (e) {
+      console.error("Profile title update error:", e);
+    }
+  }
+}
 
 /* -------------------- PROFIL -------------------- */
 
@@ -1458,6 +1920,146 @@ async function addFriendByName(rawName) {
 async function loadSocial() {
   const friends = await fetchFriends();
   renderFriendsList(friends);
+}
+
+function openPublicProfileModal(profile, saveRow) {
+  const modal = document.getElementById("publicProfileModal");
+  if (!modal) return;
+
+  const nameEl    = document.getElementById("publicProfileName");
+  const titleEl   = document.getElementById("publicProfileTitle");
+  const createdEl = document.getElementById("publicProfileCreated");
+  const gridEl    = document.getElementById("publicProfileFeaturedGrid");
+  const emptyEl   = document.getElementById("publicProfileNoFeatured");
+
+  // plukk title fra saves først, ellers fra profile
+  const currentTitleId =
+    (saveRow && saveRow.current_title_id) ||
+    profile?.current_title_id ||
+    null;
+
+  if (nameEl)  nameEl.textContent  = profile?.username || "(no name)";
+  if (titleEl) titleEl.textContent = getTitleLabelById(currentTitleId);
+
+  if (createdEl) {
+    let txt = "Unknown";
+    if (profile?.created_at) {
+      txt = new Date(profile.created_at).toLocaleString();
+    }
+    createdEl.textContent = txt;
+  }
+
+  // Featured items
+  if (gridEl) {
+    gridEl.innerHTML = "";
+
+    const inv    = (saveRow && saveRow.inventory) || {};
+    const slots  = Array.isArray(saveRow?.featured_slots) ? saveRow.featured_slots : [];
+    const items  = slots.map(id => inv[id]).filter(Boolean);
+
+    if (!items.length) {
+      if (emptyEl) {
+        emptyEl.style.display = "";
+        emptyEl.textContent = "This player has no featured items yet.";
+      }
+    } else {
+      if (emptyEl) emptyEl.style.display = "none";
+
+      for (const item of items) {
+        const wrapper = document.createElement("div");
+        wrapper.className = "profile-feature-slot";
+
+        const inner = document.createElement("div");
+        inner.className = "profile-feature-slot-inner";
+        inner.innerHTML = `
+          <img src="${item.img}" alt="${item.name}">
+          <div class="profile-feature-name">${item.name}</div>
+          <div class="muted" style="font-size:12px;">x${item.count || 1} • ${item.rarity}</div>
+        `;
+
+        wrapper.appendChild(inner);
+        gridEl.appendChild(wrapper);
+      }
+    }
+  }
+
+  modal.classList.remove("hidden");
+}
+
+function closePublicProfileModal() {
+  const modal = document.getElementById("publicProfileModal");
+  if (modal) modal.classList.add("hidden");
+}
+
+async function openPublicProfileByName(rawName) {
+  const name   = (rawName || "").trim();
+  const msgEl  = document.getElementById("socialMessage");
+
+  if (!name) {
+    if (msgEl) msgEl.textContent = "Type a username first.";
+    return;
+  }
+
+  const session = getSession?.();
+  const userId  = session?.userId;
+
+  if (!vmSupabase || !userId) {
+    if (msgEl) msgEl.textContent = "Not connected – try reloading the page.";
+    return;
+  }
+
+  try {
+    // 1) Finn profil (først eksakt match)
+    let { data: profile, error: profErr } = await vmSupabase
+      .from("profiles")
+      .select("id, username, created_at, current_title_id")
+      .eq("username", name)
+      .maybeSingle();
+
+    // 2) Hvis ingen, prøv en ilike-wildcard på username
+    if (!profile && !profErr) {
+      const { data: fallbackRows, error: fbErr } = await vmSupabase
+        .from("profiles")
+        .select("id, username, created_at, current_title_id")
+        .ilike("username", `%${name}%`)
+        .limit(1);
+
+      if (!fbErr && fallbackRows && fallbackRows.length > 0) {
+        profile = fallbackRows[0];
+      } else if (fbErr) {
+        profErr = fbErr;
+      }
+    }
+
+    if (profErr) {
+      console.error("openPublicProfileByName profile error:", profErr);
+      if (msgEl) msgEl.textContent = "Error looking up user.";
+      return;
+    }
+
+    if (!profile) {
+      if (msgEl) msgEl.textContent = `No user with username "${name}" found.`;
+      return;
+    }
+
+    // 3) Hent save-raden for denne brukeren (featured_slots + inventory + current_title_id)
+    const { data: saveRow, error: saveErr } = await vmSupabase
+      .from("saves")
+      .select("featured_slots, inventory, current_title_id")
+      .eq("user_id", profile.id)
+      .maybeSingle();
+
+    if (saveErr) {
+      console.error("openPublicProfileByName save error:", saveErr);
+      // Vi kan fortsatt vise profil-info uten featured items
+    }
+
+    openPublicProfileModal(profile, saveRow || null);
+    if (msgEl) msgEl.textContent = "";
+  } catch (e) {
+    console.error("openPublicProfileByName exception:", e);
+    if (msgEl) msgEl.textContent = "Unexpected error while loading profile.";
+  }
 }
 
 function openTradeWithFriend(friend){

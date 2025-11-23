@@ -7,67 +7,500 @@
   <link rel="stylesheet" href="style.css" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-  <style>
-    /* Page-specific tweaks (kept tiny to avoid touching your main CSS) */
-    .auth-wrap{
-      min-height: 100dvh; display:grid; place-items:center; padding: 24px;
+<style>
+  /* "Old web" / gammel portal-look for login-siden */
+
+  body {
+    margin: 0;
+    background:
+      repeating-linear-gradient(
+        0deg,
+        #05060a 0px,
+        #05060a 1px,
+        #060814 1px,
+        #060814 2px
+      );
+    color: var(--text);
+    font-family: "Verdana", system-ui, sans-serif;
+  }
+
+  .vm-auth-bg {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 18px;
+  }
+
+  .vm-auth-window {
+    width: min(980px, 100%);
+    border: 2px solid #3b4455;
+    box-shadow: 0 0 0 1px #000, 0 0 22px rgba(0, 0, 0, 0.9);
+    background: #04060d;
+    color: var(--text);
+  }
+
+  /* Topp-linje ala gammel app/launcher */
+  .vm-auth-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 10px;
+    background: linear-gradient(90deg, #101320, #1a2140);
+    border-bottom: 1px solid #000;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+  }
+
+  .vm-auth-topbar-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .vm-auth-logo {
+    width: 28px;
+    height: 28px;
+    image-rendering: pixelated;
+    border: 1px solid #000;
+    background: #000;
+  }
+
+  .vm-auth-title-main {
+    font-weight: 700;
+  }
+
+  .vm-auth-title-sub {
+    opacity: 0.75;
+  }
+
+  .vm-auth-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+  }
+
+  .vm-auth-led {
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    background: #16a34a;
+    box-shadow: 0 0 6px #16a34a;
+  }
+
+  .vm-auth-led.off {
+    background: #6b7280;
+    box-shadow: none;
+  }
+
+  /* Hoved-layout */
+  .vm-auth-inner {
+    display: grid;
+    grid-template-columns: 210px minmax(0, 1.5fr) 230px;
+    gap: 0;
+    border-top: 1px solid #202535;
+    border-bottom: 1px solid #000;
+  }
+
+  @media (max-width: 840px) {
+    .vm-auth-inner {
+      grid-template-columns: minmax(0, 1.5fr);
     }
-    .auth-card{
-      width:min(540px, 94vw);
-      background: var(--card); border:1px solid var(--ring); border-radius: 18px;
-      box-shadow: var(--shadow); padding: 20px; display:grid; gap: 14px;
+    .vm-auth-sidebar,
+    .vm-auth-changelog {
+      display: none;
     }
-    .auth-head{ display:flex; align-items:center; gap:10px; }
-    .auth-logo{ width:42px; height:42px; border-radius:12px; display:grid; place-items:center;
-      background: radial-gradient(120% 120% at 10% 20%, #2dd4bf, #7c5cff); color:white; font-weight:700;
-      box-shadow: var(--shadow);
-    }
-    .auth-form{ display:grid; gap:10px; }
-    .row{ display:grid; gap:6px; }
-    .row input{
-      padding:12px; border-radius:12px; border:1px solid var(--ring); background: var(--panel); color: var(--text);
-    }
-    .row label{ font-size:14px; color: var(--muted); }
-    .auth-actions{ display:flex; gap:10px; align-items:center; justify-content:space-between; margin-top:4px; }
-    .hint{ color:var(--muted); font-size:12px; }
-    .btn.wide{ width:100%; }
-    .err{ color:#fca5a5; font-size:13px; min-height: 18px; }
-  </style>
+  }
+
+  .vm-auth-panel {
+    padding: 14px 14px 16px;
+    background: radial-gradient(circle at top left, #141927 0%, #05060b 70%);
+    border-right: 1px solid #000;
+  }
+
+  .vm-auth-panel.main {
+    background: radial-gradient(circle at top, #141927 0%, #05060b 65%);
+  }
+
+  .vm-auth-panel:last-child {
+    border-right: none;
+  }
+
+  /* Venstre: “nav” / info */
+  .vm-auth-sidebar h2 {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    margin: 0 0 8px;
+    color: var(--muted);
+  }
+
+  .vm-auth-menu {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 12px;
+    font-size: 12px;
+  }
+
+  .vm-auth-menu li {
+    padding: 3px 0;
+    color: var(--muted);
+  }
+
+  .vm-auth-menu span.tag {
+    color: #22c55e;
+    font-weight: 600;
+    font-size: 10px;
+    text-transform: uppercase;
+    padding-left: 4px;
+  }
+
+  .vm-auth-counter {
+    margin-top: 12px;
+    font-size: 11px;
+    color: var(--muted);
+    border-top: 1px dashed #283141;
+    padding-top: 8px;
+  }
+
+  .vm-auth-counter code {
+    background: #02030a;
+    border: 1px solid #111827;
+    padding: 1px 4px;
+    font-size: 10px;
+  }
+
+  /* Midten: selve login-formen */
+  .vm-auth-heading {
+    font-size: 18px;
+    margin-top: 0;
+    margin-bottom: 2px;
+    letter-spacing: 0.08em;
+  }
+
+  .vm-auth-subline {
+    margin: 0 0 10px;
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  .vm-auth-subline small {
+    opacity: 0.7;
+  }
+
+  .vm-auth-form-wrapper {
+    margin-top: 8px;
+    border: 1px solid #2b3244;
+    background: #050711;
+    box-shadow: inset 0 0 0 1px #020308;
+  }
+
+  .vm-auth-form-header {
+    padding: 6px 10px;
+    background: linear-gradient(90deg, #0b1020, #111827);
+    border-bottom: 1px solid #1f2937;
+    font-size: 11px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .vm-auth-form-header span {
+    opacity: 0.8;
+  }
+
+  .vm-auth-form-inner {
+    padding: 10px 10px 12px;
+  }
+
+  /* “Old” table-form layout */
+  .vm-auth-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+  }
+
+  .vm-auth-table th,
+  .vm-auth-table td {
+    padding: 4px 4px;
+    vertical-align: middle;
+  }
+
+  .vm-auth-table th {
+    width: 38%;
+    text-align: right;
+    padding-right: 8px;
+    color: var(--muted);
+    font-weight: 500;
+    white-space: nowrap;
+  }
+
+  .vm-auth-table label {
+    cursor: pointer;
+  }
+
+  .vm-auth-table input {
+    width: 100%;
+    font-size: 12px;
+    padding: 4px 6px;
+    background: #02040b;
+    border: 1px solid #4b5563;
+    color: var(--text);
+    outline: none;
+  }
+
+  .vm-auth-table input:focus {
+    border-color: #a855f7;
+    box-shadow: 0 0 0 1px #a855f7;
+  }
+
+  .vm-auth-err {
+    margin-top: 4px;
+    min-height: 16px;
+    font-size: 11px;
+    color: #fca5a5;
+  }
+
+  .vm-auth-actions {
+    margin-top: 8px;
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    align-items: center;
+  }
+
+  /* Override buttons inne på login-siden for mer “old” stil */
+  .vm-auth-form-inner .btn {
+    border-radius: 2px;
+    font-size: 11px;
+    padding: 6px 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .vm-auth-form-inner .btn.primary {
+    background: linear-gradient(180deg, #16a34a, #065f46);
+  }
+
+  .vm-auth-form-inner .btn.accent {
+    background: linear-gradient(180deg, #4f46e5, #312e81);
+  }
+
+  .vm-auth-hint {
+    margin-top: 8px;
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  /* Høyre: changelog / “been around a while” */
+  .vm-auth-changelog-title {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    margin: 0 0 8px;
+    color: var(--muted);
+  }
+
+  .vm-auth-changelog {
+    font-size: 11px;
+  }
+
+  .vm-auth-changelog ul {
+    list-style: square;
+    padding-left: 16px;
+    margin: 0 0 8px;
+  }
+
+  .vm-auth-changelog li {
+    margin-bottom: 4px;
+    color: var(--muted);
+  }
+
+  .vm-auth-changelog .ver {
+    color: #a5b4fc;
+    font-weight: 600;
+  }
+
+  .vm-auth-footer-strip {
+    padding: 4px 8px;
+    font-size: 10px;
+    color: var(--muted);
+    background: #020308;
+    border-top: 1px solid #000;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .vm-auth-footer-strip span {
+    opacity: 0.8;
+  }
+</style>
+
+
 </head>
 <body>
-  <div class="auth-wrap">
-    <div class="auth-card">
-      <div class="auth-head">
-        <img src="assets\boxes\beta\bta-sko.png" class="logo" alt="">
-        <div>
-          <h1 style="margin:0;">VoidMarket</h1>
-          <p class="tag" style="margin-top:2px;">Create a local profile to start collecting.</p>
+  <div class="vm-auth-bg">
+    <div class="vm-auth-window">
+
+      <!-- Topplinje / gammel launcher-følelse -->
+      <div class="vm-auth-topbar">
+        <div class="vm-auth-topbar-left">
+          <img src="assets/boxes/beta/bta-sko.png" alt="VoidMarket" class="vm-auth-logo" />
+          <div>
+            <div class="vm-auth-title-main">VOIDMARKET ACCOUNT GATEWAY</div>
+            <div class="vm-auth-title-sub">v1.2.1 · voidmarket Online*</div>
+          </div>
+        </div>
+
+        <div class="vm-auth-status">
+          <div class="vm-auth-led"></div>
+          <span>SERVER STATUS: ONLINE</span>
         </div>
       </div>
 
-      <form id="authForm" class="auth-form" autocomplete="off">
-        <div class="row">
-          <label for="username">Username (display name)</label>
-          <input id="username" name="username" minlength="3" maxlength="24" placeholder="Your name" />
-        </div>
-        <div class="row">
-          <label for="email">Email</label>
-          <input id="email" name="email" type="email" required placeholder="you@example.com" />
-        </div>
-        <div class="row">
-          <label for="password">Password</label>
-          <input id="password" name="password" type="password" required minlength="6" maxlength="64" placeholder="••••••••" />
-        </div>
-        <div class="err" id="authErr"></div>
-        <div class="auth-actions">
-          <button type="button" id="loginBtn" class="btn primary">Sign in</button>
-          <button type="button" id="registerBtn" class="btn accent">Create account</button>
-        </div>
-        <div class="hint">
-          Use your email and password to sign in. Username is your display name in-game (set it when you create your account, or change it on login if it was empty).
-        </div>
-      </form>
+      <!-- Tre-delt layout: fake-nav · login · changelog -->
+      <div class="vm-auth-inner">
+        <!-- VENSTRE: “old web”-sidebar -->
+        <aside class="vm-auth-panel vm-auth-sidebar">
+          <h2>VOIDMARKET // HUB</h2>
+          <ul class="vm-auth-menu">
+            <li>&gt; Home <span class="tag">beta</span></li>
+           <!-- <li>&gt; Market overview</li>-->
+           <!-- <li>&gt; Item gallery</li>-->
+           <!-- <li>&gt; Global feed</li>-->
+           <!-- <li>&gt; Support / FAQ</li>-->
+          </ul>
 
+          <div class="vm-auth-counter">
+            <div>Last update: <code>19-11-2025</code></div>
+            <div>Current version <code>1.2.1</code></div>
+            <div>Best viewed in <code>1080x1920</code></div>
+          </div>
+        </aside>
+
+        <!-- MIDTEN: selve login-skjermen -->
+        <main class="vm-auth-panel main">
+          <h1 class="vm-auth-heading">SIGN IN TO VOIDMARKET</h1>
+          <p class="vm-auth-subline">
+            Use your account to open boxes, collect art and trade with friends.<br />
+            <small>New here? Create an account – it’s free and stored in our cloud save.</small>
+          </p>
+
+          <div class="vm-auth-form-wrapper">
+            <div class="vm-auth-form-header">
+              <span>Account credentials</span>
+              <span>v1 cloud auth · Supabase</span>
+            </div>
+
+            <div class="vm-auth-form-inner">
+              <form id="authForm" autocomplete="off">
+                <table class="vm-auth-table">
+                  <tr>
+                    <th>
+                      <label for="username">Display name</label>
+                    </th>
+                    <td>
+                      <input
+                        id="username"
+                        name="username"
+                        minlength="3"
+                        maxlength="24"
+                        placeholder="(optional on first login)"
+                      />
+                    </td>
+                  </tr>
+                  <tr>
+                    <th>
+                      <label for="email">Email</label>
+                    </th>
+                    <td>
+                      <input
+                        id="email"
+                        name="email"
+                        type="email"
+                        required
+                        placeholder="you@example.com"
+                      />
+                    </td>
+                  </tr>
+                  <tr>
+                    <th>
+                      <label for="password">Password</label>
+                    </th>
+                    <td>
+                      <input
+                        id="password"
+                        name="password"
+                        type="password"
+                        required
+                        minlength="6"
+                        maxlength="64"
+                        placeholder="••••••••"
+                      />
+                    </td>
+                  </tr>
+                </table>
+
+                <div class="vm-auth-err" id="authErr"></div>
+
+                <div class="vm-auth-actions">
+                  <button type="button" id="loginBtn" class="btn primary">
+                    Sign in
+                  </button>
+                  <button type="button" id="registerBtn" class="btn accent">
+                    Create account
+                  </button>
+                </div>
+
+                <div class="vm-auth-hint">
+                  Username is your in-game display name.  
+                  Set it when creating your account or update it on first login if it’s empty.
+                </div>
+              </form>
+            </div>
+          </div>
+        </main>
+
+        <!-- CHANGELOG, UPDATES,  -->
+        <aside class="vm-auth-panel vm-auth-changelog">
+          <h2 class="vm-auth-changelog-title">CHANGELOG (ARCHIVE)</h2>
+          <div class="vm-auth-changelog">
+            <ul>
+              <li>
+                <span class="ver">v1.2.1 · 23-11-2025</span><br/>
+                - New Interface design <br>
+                - Profile titles added <br>
+                - Draggable Global feed added <br>
+                - Player search (look-up) added
+              </li>
+              <li>
+                <span class="ver">v1.2 · 19-11-2025</span><br/>
+                Accounts in cloud (Access anywhere). <br>
+                Account deletion request added. <br>
+                "VoidMarket" logo name changed to "VoidMarket BETA"
+              </li>
+              <li>
+                <span class="ver">HALLOWEEN EVENT · <br>
+                  09-11-2025 -> 31-12-25</span><br/>
+                Added HW 2025 box.<br>
+              </li>
+            </ul>
+
+            <p style="margin-top: 6px; color: var(--muted); font-size: 10px;">
+              *Rumour says early testers still hold items that never dropped again…
+            </p>
+          </div>
+        </aside>
+      </div>
+
+      <!-- Bunnstripe -->
+      <div class="vm-auth-footer-strip">
+        <span>2025 VoidMarket · Built by collectors, for collectors</span>
+        <span>Powered by Supabase</span>
+      </div>
     </div>
   </div>
 
@@ -99,6 +532,30 @@
       const password = document.getElementById("password").value;
       return { username, email, password };
     }
+
+    async function isUsernameTaken(username){
+      const name = (username || "").trim();
+      if (!name) return false;
+
+      try {
+        const { data, error } = await supabase
+          .from("profiles")
+          .select("id")
+          .ilike("username", name)  // case-insensitive
+          .limit(1);
+
+        if (error) {
+          console.error("username check error:", error);
+          // fail-open: ikke blokker registrering hvis sjekken feiler
+          return false;
+        }
+        return Array.isArray(data) && data.length > 0;
+      } catch (e) {
+        console.error("username check exception:", e);
+        return false;
+      }
+    }
+
 
     // Kun brukt ved registrering / første innlogging
     async function createProfileAndSave(userId, username, email) {
@@ -176,6 +633,11 @@
       }
       if (password.length < 6){
         return showError("Password must be at least 6 characters.");
+      }
+
+      // sjekk om brukernavnet er ledig
+      if (await isUsernameTaken(username)) {
+        return showError("That username is already taken. Please choose another.");
       }
 
       const { data, error } = await supabase.auth.signUp({
@@ -275,20 +737,29 @@
           if (prof.username) {
             displayName = prof.username;
           } else if (username && username.length >= 3) {
-            displayName = username;
+            // prøv å sette nytt username hvis det er ledig
             try {
-              const { error: upErr } = await supabase
-                .from("profiles")
-                .update({ username })
-                .eq("id", user.id);
-              if (upErr) {
-                console.error("profile update error", upErr);
+              const taken = await isUsernameTaken(username);
+              if (taken) {
+                showError("That username is already taken. Keep your current name or pick another next time.");
+                displayName = email; // fallback
+              } else {
+                displayName = username;
+                const { error: upErr } = await supabase
+                  .from("profiles")
+                  .update({ username })
+                  .eq("id", user.id);
+                if (upErr) {
+                  console.error("profile update error", upErr);
+                }
               }
             } catch (e) {
               console.error("profile update exception", e);
+              displayName = email;
             }
           }
         }
+
       } catch (e) {
         console.error("profile fetch exception", e);
         return showError("Unexpected error loading profile.");
