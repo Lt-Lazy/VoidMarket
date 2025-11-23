@@ -190,11 +190,64 @@
     opacity: 0.7;
   }
 
+  .vm-auth-subline a {
+    color: #a5b4fc;
+    text-decoration: underline;
+  }
+
+  .vm-auth-subline a:hover {
+    text-decoration: none;
+    opacity: 0.9;
+  }
+
   .vm-auth-form-wrapper {
     margin-top: 8px;
     border: 1px solid #2b3244;
     background: #050711;
     box-shadow: inset 0 0 0 1px #020308;
+  }
+
+    .vm-auth-discord {
+    margin-top: 10px;
+    padding: 8px 10px;
+    border-radius: 4px;
+    border: 1px dashed #374151;
+    background: #050814;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  .vm-auth-discord-text {
+    max-width: 70%;
+  }
+
+  .vm-auth-discord-label {
+    font-family: "SF Mono", Menlo, Monaco, Consolas, "Courier New", monospace;
+    font-size: 10px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: #9ca3af;
+    margin-bottom: 2px;
+  }
+
+  .vm-auth-discord .btn.discord {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 6px 12px;
+    border-radius: 999px;
+    background: linear-gradient(135deg, #5865f2, #4c1d95);
+    border: 1px solid #818cf8;
+    color: #f9fafb;
+    white-space: nowrap;
+  }
+
+  .vm-auth-discord .btn.discord:hover {
+    opacity: 0.95;
   }
 
   .vm-auth-form-header {
@@ -378,15 +431,25 @@
             <div>Last update: <code>19-11-2025</code></div>
             <div>Current version <code>1.2.1</code></div>
             <div>Best viewed in <code>1080x1920</code></div>
+            <p class="vm-auth-subline">
+              <br>
+              <small>
+                No account yet? Join our 
+                <a href="https://discord.gg/MJDUbEBWuc" target="_blank" rel="noopener noreferrer">
+                  Discord server
+                </a>
+                to request access.
+              </small>
+            </p>
           </div>
         </aside>
 
         <!-- MIDTEN: selve login-skjermen -->
         <main class="vm-auth-panel main">
-          <h1 class="vm-auth-heading">SIGN IN TO VOIDMARKET</h1>
+          <h1 class="vm-auth-heading">VOIDMARKET PORTAL</h1>
           <p class="vm-auth-subline">
             Use your account to open boxes, collect art and trade with friends.<br />
-            <small>New here? Create an account – it’s free and stored in our cloud save.</small>
+            <small>New here? Join our discord and get an account from our team!</small>
           </p>
 
           <div class="vm-auth-form-wrapper">
@@ -450,18 +513,33 @@
                   <button type="button" id="loginBtn" class="btn primary">
                     Sign in
                   </button>
-                  <button type="button" id="registerBtn" class="btn accent">
-                    Create account
-                  </button>
                 </div>
 
                 <div class="vm-auth-hint">
                   Username is your in-game display name.  
-                  Set it when creating your account or update it on first login if it’s empty.
+                  Set it when requesting your account or update it on first login if it’s empty.
                 </div>
               </form>
             </div>
           </div>
+
+          <div class="vm-auth-discord">
+            <div class="vm-auth-discord-text">
+              <div class="vm-auth-discord-label">// ACCESS REQUEST</div>
+              <div>
+                New players request accounts through our Discord.  
+                Join the server to read how to get started.
+              </div>
+            </div>
+            <a href="https://discord.gg/MJDUbEBWuc" 
+               target="_blank" 
+               rel="noopener noreferrer"
+               class="btn discord">
+              Join Discord
+            </a>
+          </div>
+
+
         </main>
 
         <!-- CHANGELOG, UPDATES,  -->
@@ -619,63 +697,6 @@
       }
     }
 
-    // ---------- REGISTRERING ----------
-    async function handleRegister(){
-      showError("");
-
-      const { username, email, password } = getAuthInputs();
-
-      if (username.length < 3){
-        return showError("Username must be at least 3 characters.");
-      }
-      if (!email || !email.includes("@")) {
-        return showError("Please enter a valid email address.");
-      }
-      if (password.length < 6){
-        return showError("Password must be at least 6 characters.");
-      }
-
-      // sjekk om brukernavnet er ledig
-      if (await isUsernameTaken(username)) {
-        return showError("That username is already taken. Please choose another.");
-      }
-
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password
-      });
-
-      if (error) {
-        console.error(error);
-        if (error.message.includes("User already registered")) {
-          return showError("An account with this email already exists.");
-        }
-        return showError(error.message || "Could not create account. Try again.");
-      }
-
-      const user    = data.user || null;
-      const session = data.session || null;
-
-      // Alltid gi feedback til spilleren
-      showError("Account created! Check your email and click the confirmation link, then sign in here.");
-
-      // Hvis prosjektet krever epost-verifisering får vi ofte IKKE en session her.
-      // Da stopper vi – profil/save opprettes ved første innlogging i stedet.
-      if (!session || !user) return;
-
-      // Hvis du IKKE krever epost-verifisering vil vi ha en session her,
-      // og da kan vi auto-logge inn spilleren som før:
-      try {
-        await createProfileAndSave(user.id, username, email);
-      } catch (e) {
-        // Om dette feiler pga RLS ell. viser vi i hvert fall en feilmelding
-        return showError("Account created, but could not initialize save. Try signing in again.");
-      }
-
-      setSession(username || email, user.id);
-      window.location.href = "voidmarket.html";
-    }
-
     // ---------- LOGIN ----------
     async function handleLogin(){
       showError("");
@@ -774,7 +795,6 @@
     }
 
     document.getElementById("loginBtn").addEventListener("click", handleLogin);
-    document.getElementById("registerBtn").addEventListener("click", handleRegister);
 
     // Hvis session allerede finnes lokalt → hopp rett inn i spillet
     (function autoRedirectIfLoggedIn(){
