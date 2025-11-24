@@ -64,11 +64,12 @@
     /* MAIN LAYOUT */
     body.vm-game .vm-header,
     body.vm-game .vm-tabs,
-    body.vm-game main,
-    body.vm-game .vm-footer{
+    body.vm-game main{
       position:relative;
       z-index:1; /* over scanline-overlay */
     }
+
+
 
     body.vm-game .vm-header{
       display:flex;
@@ -245,6 +246,88 @@
       gap:6px;
       background:#020308;
     }
+
+    .market-header{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:12px;
+      margin-bottom:12px;
+    }
+
+    .market-header-text h2{
+      margin:0 0 4px 0;
+      font-size:16px;
+      letter-spacing:0.12em;
+      text-transform:uppercase;
+    }
+
+    .market-header-text .muted{
+      font-size:12px;
+    }
+
+    .market-countdown{
+      padding:8px 10px;
+      border-radius:6px;
+      border:1px solid #4b5563;
+      background:linear-gradient(135deg,#020617,#0f172a);
+      min-width:180px;
+      text-align:right;
+      font-family:"SF Mono", Menlo, Monaco, Consolas, "Courier New", monospace;
+    }
+
+    .market-countdown .cd-label{
+      font-size:10px;
+      letter-spacing:0.16em;
+      text-transform:uppercase;
+      color:#9ca3af;
+      margin-bottom:4px;
+    }
+
+    .market-countdown .cd-value{
+      font-size:14px;
+      font-weight:600;
+      color:#e5e7eb;
+      margin-bottom:2px;
+    }
+
+    .market-countdown .cd-name{
+      font-size:11px;
+      color:#a5b4fc;
+    }
+
+    @media (max-width:700px){
+      .market-header{
+        flex-direction:column;
+        align-items:flex-start;
+      }
+      .market-countdown{
+        text-align:left;
+        width:100%;
+      }
+    }
+
+    .cd-image-wrapper {
+      margin-top: 8px;
+      text-align: right;
+    }
+
+    .cd-image-wrapper img {
+      width: 90px;
+      height: auto;
+      border-radius: 6px;
+      border: 1px solid #4b5563;
+      background: #0f172a;
+      padding: 4px;
+      box-shadow: 0 0 6px rgba(0,0,0,0.4);
+    }
+
+    @media (max-width:700px){
+      .cd-image-wrapper {
+        text-align: left;
+      }
+    }
+
 
     /* Inventory / filter bar */
     body.vm-game .inv-toolbar{
@@ -495,6 +578,7 @@
       display:flex;
       justify-content:space-between;
       align-items:center;
+      z-index:0;
     }
 
     body.vm-game .vm-footer small::after{
@@ -637,11 +721,28 @@
   <main>
     <!-- MARKET -->
     <section id="market" class="tabpanel active" aria-labelledby="market-tab">
-      
-      
-      <div id="marketCards" class="cards"></div>
+      <header class="market-header">
+        <div class="market-header-text">
+          <h2>Market</h2>
+          <p class="muted">
+            Open boxes, collect digital art and grow your archive.
+          </p>
+        </div>
+        <div class="market-countdown">
+          <div class="cd-label">// NEXT BOX DROP</div>
+          <div id="nextBoxCountdown" class="cd-value">--d --h --m --s</div>
+          <div id="nextBoxName" class="cd-name">TBA</div>
 
+          <!-- Bilde av kommende event/box -->
+          <div class="cd-image-wrapper">
+            <img id="nextBoxImage" src="" alt="Upcoming box" />
+          </div>
+        </div>
+      </header>
+
+      <div id="marketCards" class="cards"></div>
     </section>
+
 
     <!-- INVENTORY -->
     <section id="inventory" class="tabpanel" aria-labelledby="inventory-tab">
@@ -826,7 +927,21 @@
       <div class="modal-card">
         <button id="itemModalClose" class="modal-close" aria-label="Close">✕</button>
         <div class="modal-body">
-          <img id="modalImg" src="" alt="" class="modal-img" />
+
+          <!-- container for bilde + “depth light”-slider -->
+          <div class="modal-visual">
+            <img id="modalImg" src="" alt="" class="modal-img" />
+            <input
+              id="inspectSlider"
+              class="inspect-slider"
+              type="range"
+              min="0"
+              max="100"
+              value="50"
+              aria-label="Inspect item"
+            />
+          </div>
+
           <div class="modal-info">
             <h3 id="modalName">Item name</h3>
             <div class="modal-meta">
@@ -851,7 +966,9 @@
               </div>
             </div>
           </div>
+
         </div>
+
       </div>
     </div>
 

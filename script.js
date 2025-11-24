@@ -326,17 +326,34 @@ const DATA = {
       ]
     },
 
-    /* XMAS 
+    /*
+    {
+      id: "goldenDays25",
+      name: "Golden days Box",
+      price: 650,
+      design: "assets/boxes/knife/goldenDays25/gd25-box.png",
+      rates: { COMMON: 50, RARE: 30, EPIC: 16, LEGENDARY: 3 , MYTHIC: 1 },
+      pool: [
+        { id: "gd25-gbk7", name: "Golden butterfly knife",   rarity: RARITY.LEGENDARY,    img: "assets/boxes/knife/goldenDays25/gd25-gbk7.png", description: "Golden days 07: This one of a kind butterfly knife marks the participation of the golden days of voidmarket", value: 130000 },
+      ]
+    },*/
+
+    /*
     {
       id: "XMAS25",
       name: "Xmas 25 Box",
-      price: 1,
+      price: 800,
       design: "assets/boxes/Xmas/xmas25/xmas2025.png",
       rates: { COMMON: 63, RARE: 19, EPIC: 14, LEGENDARY: 3, MYTHIC: 1 },
       pool: [
-        { id: "xmas25-cc1", name: "Candy Cane",  rarity: RARITY.COMMON,  img: "assets/boxes/Xmas/xmas25/xm25-cc1.png",   description: "Xmas25 01: Candy Cane Card, First item in the Xmas 2025 event box. No screaming in church!", value: 86 },
-        { id: "xmas25-sm2", name: "Snow Man",    rarity: RARITY.RARE,    img: "assets/boxes/Xmas/xmas25/xm25-sm2.png",   description: "Xmas25 02: Snow Man, The christmas spirit follows along with the snow man", value: 692 },
-        { id: "xmas25-ch3", name: "xmas hat",    rarity: RARITY.RARE,    img: "assets/boxes/Xmas/xmas25/xm25-ch3.png",   description: "Xmas25 03: Xmas hat, used by many or used by one merry man", value: 875 },
+        { id: "xmas25-cc1", name: "Candy Cane",     rarity: RARITY.COMMON,    img: "assets/boxes/Xmas/xmas25/xm25-cc1.png",   description: "Xmas25 01: Candy Cane Card, First item in the Xmas 2025 event box. No screaming in church!", value: 86 },
+        { id: "xmas25-sm2", name: "Snow Man",       rarity: RARITY.COMMON,    img: "assets/boxes/Xmas/xmas25/xm25-sm2.png",   description: "Xmas25 02: Snow Man, The christmas spirit follows along with the snow man", value: 692 },
+        { id: "xmas25-ch3", name: "xmas hat",       rarity: RARITY.RARE,      img: "assets/boxes/Xmas/xmas25/xm25-ch3.png",   description: "Xmas25 03: Xmas hat, used by many or used by one merry man", value: 875 },
+        { id: "xmas25-ct4", name: "xmas tree",      rarity: RARITY.EPIC,      img: "assets/boxes/Xmas/xmas25/xm25-ct4.png",   description: "Xmas25 04: Xmas tree, Found in the woods naked, renovated and placed in a home", value: 6850 },
+        { id: "xmas25-sl5", name: "Santas list",    rarity: RARITY.EPIC,      img: "assets/boxes/Xmas/xmas25/xm25-sl5.png",   description: "Xmas25 05: Santas list, good or bad, your name will be on this list", value: 8200 },
+        { id: "xmas25-sa6", name: "Saint Nicholas", rarity: RARITY.LEGENDARY, img: "assets/boxes/Xmas/xmas25/xm25-sa6.png",   description: "Xmas25 06: Saint Nicholas, is it a bird? Is it a plane?", value: 386000 },
+
+
 
       ]
     },*/
@@ -354,6 +371,17 @@ let state = {
   inventory: {},
   achievements: {},
   featuredSlots: [null, null, null],
+};
+
+// ---------- Next box drop config ----------
+//Endre datoen + navnet når det planlegges en ny box.
+const NEXT_BOX_RELEASE = {
+  active: true,
+  at: "2025-12-02T20:30:00+01:00",
+  name: "XMAS Box 2025",
+  
+  //URL til bilde av boxen
+  image: "assets/boxes/Xmas/xmas25/xmas2025.png"
 };
 
 // ---------- Trading state ----------
@@ -707,13 +735,63 @@ function openItemModal(itemId){
   const openBtn = document.getElementById("openBoxBtn");
   if (openBtn) openBtn.style.display = (it.type === ITEM_TYPE.BOX) ? "inline-block" : "none";
 
+  // (valgfritt) skjul slider for bokser, vis for collectibles
+  const inspectSlider = document.getElementById("inspectSlider");
+  if (inspectSlider) {
+    inspectSlider.style.display = (it.type === ITEM_TYPE.BOX) ? "none" : "block";
+  }
+
+  // start alltid fra “midt lys/rotasjon”
+  resetInspectTransform();
+
   $("#itemModal").classList.remove("hidden");
 }
+
 
 function closeItemModal(){
   $("#itemModal").classList.add("hidden");
   currentModalId = null;
+
+  // valgfritt, men nice for neste gang
+  resetInspectTransform();
 }
+
+
+
+function closeItemModal(){
+  $("#itemModal").classList.add("hidden");
+  currentModalId = null;
+  resetInspectTransform();   // sørg for at neste item starter fra midten
+}
+
+/* ---------- Item inspect (fake 3D) ---------- */
+
+function updateInspectTransform(rawValue){
+  const img = document.getElementById("modalImg");
+  if (!img) return;
+
+  // Slider-verdi 0–100 -> -1 til 1
+  const value = typeof rawValue === "number" ? rawValue : parseFloat(rawValue) || 50;
+  const normalized = (value - 50) / 50; // -1 (venstre) til 1 (høyre)
+
+  const maxAngle = 200;      // maks rotasjon i grader
+  const maxSkew  = 6;       // liten ekstra "warp"
+  const maxShift = 16;      // hvor mye den glir sideveis
+
+  const angle = normalized * maxAngle;
+  const skewY = -normalized * maxSkew;
+  const tx    = normalized * maxShift;
+
+  img.style.transform =
+    `perspective(900px) rotateY(${angle}deg) skewY(${skewY}deg) translateX(${tx}px)`;
+}
+
+function resetInspectTransform(){
+  const slider = document.getElementById("inspectSlider");
+  if (slider) slider.value = 50;
+  updateInspectTransform(50);
+}
+
 
 function sellOne(){
   if(!currentModalId) return;
@@ -877,6 +955,63 @@ function renderMarket(){
   }
 }
 
+// Countdown next drop function
+let nextBoxCountdownTimer = null;
+
+function initNextBoxCountdown(){
+  const el = document.getElementById("nextBoxCountdown");
+  const nameEl = document.getElementById("nextBoxName");
+  if (!el) return;
+
+  // Hvis det ikke har planlagt noe drop
+  if (!NEXT_BOX_RELEASE || !NEXT_BOX_RELEASE.active) {
+    el.textContent = "No scheduled drop";
+    if (nameEl) nameEl.textContent = "";
+    return;
+  }
+
+  if (nameEl && NEXT_BOX_RELEASE.name) {
+    nameEl.textContent = NEXT_BOX_RELEASE.name;
+  }
+
+  const imgEl = document.getElementById("nextBoxImage");
+  if (imgEl && NEXT_BOX_RELEASE.image) {
+      imgEl.src = NEXT_BOX_RELEASE.image;
+  }
+
+  const target = new Date(NEXT_BOX_RELEASE.at);
+
+  function update(){
+    const now = new Date();
+    const diff = target - now;
+
+    if (diff <= 0){
+      el.textContent = "Available now";
+      if (nameEl && NEXT_BOX_RELEASE.name) {
+        nameEl.textContent = NEXT_BOX_RELEASE.name;
+      }
+      if (nextBoxCountdownTimer) {
+        clearInterval(nextBoxCountdownTimer);
+        nextBoxCountdownTimer = null;
+      }
+      return;
+    }
+
+    const totalSeconds = Math.floor(diff / 1000);
+    const days    = Math.floor(totalSeconds / (24 * 3600));
+    const hours   = Math.floor((totalSeconds % (24 * 3600)) / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+
+    const pad = (n) => String(n).padStart(2, "0");
+    el.textContent = `${days}d ${pad(hours)}h ${pad(minutes)}m ${pad(seconds)}s`;
+  }
+
+  update();
+  nextBoxCountdownTimer = setInterval(update, 1000);
+}
+
+
 // Turn a DATA.boxes[] entry into an inventory record
 function makeBoxInventoryEntry(box){
   return {
@@ -1000,6 +1135,14 @@ function bindEvents(){
     if(e.target.id === "itemModal") closeItemModal();
   });
   $("#sellOneBtn").addEventListener("click", sellOne);
+
+  // Inspect-slider (depth light + warp)
+  const inspectSlider = document.getElementById("inspectSlider");
+  if (inspectSlider) {
+    inspectSlider.addEventListener("input", (e) => {
+      updateInspectTransform(e.target.value);
+    });
+  }
 
   // Profile button 
   const profileBtn = document.getElementById("profileBtn");
@@ -1177,6 +1320,7 @@ async function mount(){
   // 3) Resten av oppstarten
   firstRunBonuses();
   renderMarket();
+  initNextBoxCountdown();
   updateCoins();
   renderInventory("ALL");
   renderAchievements?.();
@@ -1249,19 +1393,20 @@ const ACHIEVEMENTS = [
       return HW25.pool.every(it => st.inventory[it.id]?.count > 0);
     }
   },
-  /* XMAS ACHIVEMENT
+  /*
   {
     id: "ach_fullset_xmas25",
     title: "Full Set: xmas25",
     description: "Own all 6 items from the Xmas 25 set at the same time.",
     icon: "assets/boxes/Xmas/xmas25/xmas2025.png",
     check: (st) => {
-      const HW25 = getBox("XMAS25");
-      if (!HW25) return false;
+      const XMAS25 = getBox("XMAS25");
+      if (!XMAS25) return false;
       // must have at least one of each item from normal.pool
-      return HW25.pool.every(it => st.inventory[it.id]?.count > 0);
+      return XMAS25.pool.every(it => st.inventory[it.id]?.count > 0);
     }
   },*/
+
   { /* ------------- RARITY -------------- */
     id: "ach_first_common",
     title: "First Common!",
