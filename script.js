@@ -283,6 +283,7 @@ const DATA = {
       price: 0,
       design: "assets/boxes/boxNormal/box-normal.png",
       rates: { COMMON: 80, RARE: 10, EPIC: 6, LEGENDARY: 3, MYTHIC: 1 },
+      featuredColor: "#38bdf8",
       pool: [
         { id: "nl-gr1", name: "Grodr",             rarity: RARITY.COMMON,    img: "assets/boxes/boxNormal/nl-gr1.png", description: "Sea life 01: Grodr, a fresh water fish. Likes to be around other same-species fish, sensitive, Not fond of Albino Grodr", value: 10 },
         { id: "nl-gr2", name: "Grouder",           rarity: RARITY.COMMON,    img: "assets/boxes/boxNormal/nl-gr2.png", description: "Sea life 02: Grouder, fresh water fish, big brother of grodr, in the same fish family. Hunts alone, protective", value: 15 },
@@ -300,6 +301,7 @@ const DATA = {
       price: 200,
       design: "assets/boxes/beta/beta-box.png",
       rates: { COMMON: 50, RARE: 30, EPIC: 16, LEGENDARY: 3 , MYTHIC: 1 },
+      featuredColor: "#facc15",
       pool: [
         { id: "bta-pos", name: "Poisetle",          rarity: RARITY.COMMON,    img: "assets/boxes/beta/bta-pos.png", description: "VoidQuest 01: Poisetle, found in green terrain, tamable", value: 40 },
         { id: "bta-sko", name: "Skuggosk",          rarity: RARITY.COMMON,    img: "assets/boxes/beta/bta-sko.png", description: "VoidQuest 02: Skuggosk, often near lakes, can be found in deep water caves, peak companion", value: 45 },
@@ -316,6 +318,7 @@ const DATA = {
       price: 800,
       design: "assets/boxes/Halloween/hw25/HW2025.png",
       rates: { COMMON: 60, RARE: 20, EPIC: 16, LEGENDARY: 3, MYTHIC: 1 },
+      featuredColor: "#a855f7",
       pool: [
         { id: "hw25-sc1", name: "Scream",           rarity: RARITY.COMMON,    img: "assets/boxes/Halloween/hw25/hw25-sc1.png", description: "Halloween25 01: Scream Card, First item in the Halloween 2025 event box. Fun world!", value: 70 },
         { id: "hw25-gh1", name: "Ghost",            rarity: RARITY.COMMON,    img: "assets/boxes/Halloween/hw25/hw25-gh1.png", description: "Halloween25 02: Ghost, as scared of you as you are of them, have a little spirit!", value: 81 },
@@ -326,25 +329,13 @@ const DATA = {
       ]
     },
 
-    /*
-    {
-      id: "goldenDays25",
-      name: "Golden days Box",
-      price: 650,
-      design: "assets/boxes/knife/goldenDays25/gd25-box.png",
-      rates: { COMMON: 50, RARE: 30, EPIC: 16, LEGENDARY: 3 , MYTHIC: 1 },
-      pool: [
-        { id: "gd25-gbk7", name: "Golden butterfly knife",   rarity: RARITY.LEGENDARY,    img: "assets/boxes/knife/goldenDays25/gd25-gbk7.png", description: "Golden days 07: This one of a kind butterfly knife marks the participation of the golden days of voidmarket", value: 130000 },
-      ]
-    },*/
-
-    /*
     {
       id: "XMAS25",
       name: "Xmas 25 Box",
       price: 800,
       design: "assets/boxes/Xmas/xmas25/xmas2025.png",
       rates: { COMMON: 63, RARE: 19, EPIC: 14, LEGENDARY: 3, MYTHIC: 1 },
+      featuredColor: "#ff0000ff",
       pool: [
         { id: "xmas25-cc1", name: "Candy Cane",     rarity: RARITY.COMMON,    img: "assets/boxes/Xmas/xmas25/xm25-cc1.png",   description: "Xmas25 01: Candy Cane Card, First item in the Xmas 2025 event box. No screaming in church!", value: 86 },
         { id: "xmas25-sm2", name: "Snow Man",       rarity: RARITY.COMMON,    img: "assets/boxes/Xmas/xmas25/xm25-sm2.png",   description: "Xmas25 02: Snow Man, The christmas spirit follows along with the snow man", value: 692 },
@@ -353,10 +344,23 @@ const DATA = {
         { id: "xmas25-sl5", name: "Santas list",    rarity: RARITY.EPIC,      img: "assets/boxes/Xmas/xmas25/xm25-sl5.png",   description: "Xmas25 05: Santas list, good or bad, your name will be on this list", value: 8200 },
         { id: "xmas25-sa6", name: "Saint Nicholas", rarity: RARITY.LEGENDARY, img: "assets/boxes/Xmas/xmas25/xm25-sa6.png",   description: "Xmas25 06: Saint Nicholas, is it a bird? Is it a plane?", value: 386000 },
 
-
-
       ]
-    },*/
+    },
+
+    {
+      id: "fisherman25n",
+      name: "Fisherman 25 box",
+      price: 750,
+      design: "assets/boxes/Series/fisherman25N/fm25n-box.png",
+      rates: { COMMON: 70, RARE: 20, EPIC: 5, LEGENDARY: 3, MYTHIC: 2 },
+      pool: [
+        { id: "fm25n-adc",  name: "Abandoned Dock", rarity: RARITY.COMMON,    img: "assets/boxes/Series/fisherman25N/fm25n-adc.png",   description: "Fisherman25 01: An abandoned dock, used to fish for many years", value: 7 },
+        { id: "fm25n-vi2",  name: "Viking Ship",    rarity: RARITY.COMMON,    img: "assets/boxes/Series/fisherman25N/fm25n-vi2.png",   description: "Fisherman25 02: Viking Ship, Crossing the big sea hoping for land to plunder", value: 37 },
+        { id: "fm25n-sj1",  name: "Fishing Sjark",  rarity: RARITY.RARE,      img: "assets/boxes/Series/fisherman25N/fm25n-sj1.png",   description: "Fisherman25 03: Sjark, Humble fishing sjark trying to make a name for itself", value: 401 },
+        { id: "fm25n-sm4",  name: "Sea Monster",    rarity: RARITY.EPIC,      img: "assets/boxes/Series/fisherman25N/fm25n-sm4.png",   description: "Fisherman25 04: Sea Monster, observations from survivors say this beast is much bigger under the surface", value: 835 },
+        { id: "fm25n-sm5",  name: "Dead Crew",      rarity: RARITY.LEGENDARY, img: "assets/boxes/Series/fisherman25N/fm25n-sm5.png",   description: "Fisherman25 05: Dead Crew, the plunder group did in fact not find a land to plunder", value: 120000 },
+      ]
+    },
     
   ]
 };
@@ -377,12 +381,504 @@ let state = {
 //Endre datoen + navnet når det planlegges en ny box.
 const NEXT_BOX_RELEASE = {
   active: true,
-  at: "2025-12-02T20:30:00+01:00",
-  name: "XMAS Box 2025",
+  at: "2026-01-01T20:30:00+01:00",
+  name: "Golden days",
   
   //URL til bilde av boxen
-  image: "assets/boxes/Xmas/xmas25/xmas2025.png"
+  image: "assets/boxes/knife/goldenDays25/gd25-box.png"
 };
+
+// Hvilken box skal vises som "Featured" øverst i Market?
+// Endre id-en her ("HW25", "beta", "normal", osv.)
+const FEATURED_BOX_ID = "XMAS25";
+
+// ---------- Player Shop (market_listings) ----------
+
+const PLAYER_SHOP_MAX_LISTINGS = 5;
+
+// Teller hvor mange aktive listings denne spilleren har
+async function fetchMyActiveListingsCount(){
+  const session = getSession?.();
+  const userId = session?.userId;
+  if (!vmSupabase || !userId) return 0;
+
+  try {
+    const { count, error } = await vmSupabase
+      .from("market_listings")
+      .select("id", { count: "exact", head: true })
+      .eq("seller_id", userId)
+      .eq("status", "active");
+
+    if (error) {
+      console.error("fetchMyActiveListingsCount error:", error);
+      return 0;
+    }
+    return count || 0;
+  } catch (e) {
+    console.error("fetchMyActiveListingsCount exception:", e);
+    return 0;
+  }
+}
+
+// Leser alle aktive listings og render dem i Market → Player Shop
+async function loadPlayerShopListings(){
+  const listEl      = document.getElementById("playerShopList");
+  const emptyEl     = document.getElementById("playerShopEmpty");
+  const mineEl      = document.getElementById("playerShopMine");
+  const mineEmptyEl = document.getElementById("playerShopMineEmpty");
+  const myLabel     = document.getElementById("playerShopMyListingsLabel");
+
+  if (!listEl || !vmSupabase) return;
+
+  listEl.innerHTML = "";
+  if (emptyEl)     emptyEl.style.display = "none";
+  if (mineEl)      mineEl.innerHTML = "";
+  if (mineEmptyEl) mineEmptyEl.style.display = "none";
+
+  const session = getSession?.();
+  const userId  = session?.userId;
+
+  try {
+    const { data, error } = await vmSupabase
+      .from("market_listings")
+      .select("id, seller_id, seller_username, item_id, item, price, status, buyer_id, created_at")
+      .eq("status", "active")
+      .order("created_at", { ascending: false })
+      .limit(100);
+
+    if (error) {
+      console.error("loadPlayerShopListings error:", error);
+      listEl.innerHTML = `<p class="muted small">Could not load listings.</p>`;
+      return;
+    }
+
+    const rows  = data || [];
+    const mine  = userId ? rows.filter(r => r.seller_id === userId) : [];
+    const other = userId ? rows.filter(r => r.seller_id !== userId) : rows;
+
+    // ---- Global liste (alle spillere) ----
+    if (!other.length){
+      listEl.style.display = "none";
+      if (emptyEl) emptyEl.style.display = "block";
+    } else {
+      listEl.style.display = "grid";
+      for (const row of other){
+        const it   = row.item || {};
+        const rowEl = document.createElement("div");
+        rowEl.className = "player-shop-row";
+
+        const main = document.createElement("div");
+        main.className = "player-shop-main";
+
+        const img = document.createElement("img");
+        img.src = it.img || "";
+        img.alt = it.name || "Item";
+        img.onerror = () => { img.style.opacity = 0.6; img.alt = "Missing image"; };
+
+        const meta = document.createElement("div");
+        meta.className = "player-shop-meta";
+
+        const nameEl = document.createElement("div");
+        nameEl.className = "player-shop-name";
+        nameEl.textContent = it.name || "Unknown item";
+
+        const sellerEl = document.createElement("div");
+        sellerEl.className = "player-shop-seller";
+        sellerEl.textContent = `Seller: ${row.seller_username || "unknown"}`;
+
+        meta.appendChild(nameEl);
+        meta.appendChild(sellerEl);
+        main.appendChild(img);
+        main.appendChild(meta);
+
+        const right = document.createElement("div");
+        right.className = "player-shop-actions";
+
+        const priceEl = document.createElement("div");
+        priceEl.className = "player-shop-price";
+        priceEl.textContent = `${fmt(row.price || 0)} Credit`;
+        right.appendChild(priceEl);
+
+        const buyBtn = document.createElement("button");
+        buyBtn.className = "btn tiny";
+        buyBtn.type = "button";
+        buyBtn.textContent = "Buy";
+        buyBtn.addEventListener("click", () => buyListing(row.id));
+        right.appendChild(buyBtn);
+
+        rowEl.appendChild(main);
+        rowEl.appendChild(right);
+        listEl.appendChild(rowEl);
+      }
+    }
+
+    // ---- My listings (kun denne spilleren) ----
+    if (mineEl){
+      if (!mine.length){
+        mineEl.style.display = "none";
+        if (mineEmptyEl) mineEmptyEl.style.display = "block";
+      } else {
+        mineEl.style.display = "grid";
+        for (const row of mine){
+          const it    = row.item || {};
+          const rowEl = document.createElement("div");
+          rowEl.className = "player-shop-row";
+
+          const main = document.createElement("div");
+          main.className = "player-shop-main";
+
+          const img = document.createElement("img");
+          img.src = it.img || "";
+          img.alt = it.name || "Item";
+          img.onerror = () => { img.style.opacity = 0.6; img.alt = "Missing image"; };
+
+          const meta = document.createElement("div");
+          meta.className = "player-shop-meta";
+
+          const nameEl = document.createElement("div");
+          nameEl.className = "player-shop-name";
+          nameEl.textContent = it.name || "Unknown item";
+
+          // VISE SELGERNAVN + at det er din listing
+          const sellerEl = document.createElement("div");
+          sellerEl.className = "player-shop-seller";
+          sellerEl.textContent = `Seller: ${row.seller_username || "you"} (your listing)`;
+
+          meta.appendChild(nameEl);
+          meta.appendChild(sellerEl);
+          main.appendChild(img);
+          main.appendChild(meta);
+
+          const right = document.createElement("div");
+          right.className = "player-shop-actions";
+
+          // Pris til høyre – samme som i hovedlisten
+          const priceEl = document.createElement("div");
+          priceEl.className = "player-shop-price";
+          priceEl.textContent = `${fmt(row.price || 0)} Credit`;
+          right.appendChild(priceEl);
+
+          const cancelBtn = document.createElement("button");
+          cancelBtn.className = "btn tiny";
+          cancelBtn.type = "button";
+          cancelBtn.textContent = "Cancel";
+          cancelBtn.addEventListener("click", () => cancelListing(row.id));
+          right.appendChild(cancelBtn);
+
+          rowEl.appendChild(main);
+          rowEl.appendChild(right);
+          mineEl.appendChild(rowEl);
+        }
+      }
+    }
+
+    // Oppdater "Your active listings: x/5"
+    if (myLabel) {
+      const myCount = mine.length;
+      myLabel.textContent = `Your active listings: ${myCount}/${PLAYER_SHOP_MAX_LISTINGS}`;
+    }
+  } catch (e) {
+    console.error("loadPlayerShopListings exception:", e);
+    listEl.innerHTML = `<p class="muted small">Could not load listings.</p>`;
+  }
+}
+
+
+// Kalles fra item-modal: legg ut 1 stk av currentModalId til salgs
+async function listCurrentItemOnPlayerShop(){
+  if (!currentModalId) return;
+  const it = state.inventory[currentModalId];
+  if (!it || it.count <= 0) {
+    showToast("No items left to list.");
+    return;
+  }
+
+  const session = getSession?.();
+  const userId = session?.userId;
+  const username = session?.username;
+  if (!vmSupabase || !userId) {
+    showToast("Online features are not available.");
+    return;
+  }
+
+  try {
+    // Sjekk listing-limit
+    const currentCount = await fetchMyActiveListingsCount();
+    if (currentCount >= PLAYER_SHOP_MAX_LISTINGS) {
+      showToast("You already have 5 active listings.");
+      return;
+    }
+
+    const suggested = it.value || 0;
+    const defaultStr = suggested > 0 ? String(suggested) : "";
+    const priceStr = prompt(`Set price (Credits) for 1x ${it.name}:`, defaultStr);
+    if (priceStr === null) return;
+
+    const price = parseInt(priceStr, 10);
+    if (!Number.isFinite(price) || price <= 0) {
+      showToast("Invalid price.");
+      return;
+    }
+
+    // Fjern 1 stk fra inventory lokalt
+    it.count -= 1;
+    if (it.count <= 0){
+      delete state.inventory[currentModalId];
+      closeItemModal();
+    } else {
+      const cntEl = document.getElementById("modalCount");
+      if (cntEl) cntEl.textContent = "x" + it.count;
+    }
+
+    save();
+    renderInventory(getInventoryFilter(), getInventorySearch());
+
+    // Bygg item-snapshot som lagres i listing
+    const payloadItem = {
+      id: it.id,
+      name: it.name,
+      rarity: it.rarity,
+      img: it.img,
+      description: it.description,
+      value: it.value,
+      type: it.type || null,
+      boxId: it.boxId || null
+    };
+
+    const { error } = await vmSupabase
+      .from("market_listings")
+      .insert({
+        seller_id: userId,
+        seller_username: username,
+        item_id: it.id,
+        item: payloadItem,
+        price: price,
+        status: "active"
+      });
+
+    if (error) {
+      console.error("listCurrentItemOnPlayerShop insert error:", error);
+      // roll-back: gi itemet tilbake
+      if (!state.inventory[currentModalId]) {
+        state.inventory[currentModalId] = { ...it, count: 1 };
+      } else {
+        state.inventory[currentModalId].count = (state.inventory[currentModalId].count || 0) + 1;
+      }
+      save();
+      renderInventory(getInventoryFilter(), getInventorySearch());
+      showToast("Could not create listing.");
+      return;
+    }
+
+    showToast("Listing created!");
+    await loadPlayerShopListings();
+  } catch (e) {
+    console.error("listCurrentItemOnPlayerShop exception:", e);
+    showToast("Unexpected error when creating listing.");
+  }
+}
+
+// Gir selgeren credits etter at en listing er kjøpt
+async function creditSellerForListing(listing){
+  if (!vmSupabase || !listing?.seller_id || !listing?.price) return;
+
+  try {
+    const sellerId = listing.seller_id;
+    const amount   = listing.price;
+
+    const { data, error } = await vmSupabase
+      .from("saves")
+      .select("coins")
+      .eq("user_id", sellerId)
+      .maybeSingle();
+
+    if (error) {
+      console.error("creditSellerForListing load error:", error);
+      return;
+    }
+
+    const oldCoins = data?.coins ?? 0;
+    const newCoins = oldCoins + amount;
+
+    const { error: updErr } = await vmSupabase
+      .from("saves")
+      .update({ coins: newCoins })
+      .eq("user_id", sellerId);
+
+    if (updErr) {
+      console.error("creditSellerForListing update error:", updErr);
+    }
+  } catch (e) {
+    console.error("creditSellerForListing exception:", e);
+  }
+}
+
+// Kjøp en listing: trekker coins fra kjøper, gir item, markerer listing som solgt og krediterer selger
+async function buyListing(listingId){
+  const session = getSession?.();
+  const userId = session?.userId;
+  if (!vmSupabase || !userId) return;
+
+  try {
+    // 1) Les listing
+    const { data: listing, error } = await vmSupabase
+      .from("market_listings")
+      .select("id, seller_id, seller_username, item_id, item, price, status, buyer_id")
+      .eq("id", listingId)
+      .maybeSingle();
+
+    if (error || !listing) {
+      console.error("buyListing load error:", error);
+      showToast("Listing not found.");
+      await loadPlayerShopListings();
+      return;
+    }
+
+    if (listing.status !== "active") {
+      showToast("This listing is no longer available.");
+      await loadPlayerShopListings();
+      return;
+    }
+
+    if (listing.seller_id === userId) {
+      showToast("You can't buy your own listing.");
+      return;
+    }
+
+    if (state.coins < listing.price) {
+      showToast("Not enough credits!");
+      return;
+    }
+
+    // 2) Marker som solgt (atomic-ish check på status)
+    const { data: updated, error: updErr } = await vmSupabase
+      .from("market_listings")
+      .update({ status: "sold", buyer_id: userId })
+      .eq("id", listingId)
+      .eq("status", "active")
+      .select()
+      .maybeSingle();
+
+    if (updErr) {
+      console.error("buyListing update error:", updErr);
+      showToast("Could not complete purchase.");
+      return;
+    }
+
+    if (!updated) {
+      showToast("Someone else bought this listing first.");
+      await loadPlayerShopListings();
+      return;
+    }
+
+    // 3) Trekk coins og gi item til kjøper lokalt
+    state.coins -= updated.price;
+    updateCoins();
+
+    const it = updated.item || {};
+    if (it && it.id) {
+      if (!state.inventory[it.id]) {
+        state.inventory[it.id] = { ...it, count: 1 };
+      } else {
+        state.inventory[it.id].count = (state.inventory[it.id].count || 0) + 1;
+      }
+    }
+
+    save();
+    renderInventory(getInventoryFilter(), getInventorySearch());
+    showToast("Item purchased!");
+
+    // 4) Krediter selger i Supabase
+    await creditSellerForListing(updated);
+
+    // 5) Oppdater visning
+    await loadPlayerShopListings();
+  } catch (e) {
+    console.error("buyListing exception:", e);
+    showToast("Unexpected error when buying listing.");
+  }
+}
+
+async function cancelListing(listingId){
+  const session = getSession?.();
+  const userId  = session?.userId;
+  if (!vmSupabase || !userId) return;
+
+  if (!confirm("Cancel this listing and return the item to your inventory?")) {
+    return;
+  }
+
+  try {
+    // 1) Hent listing
+    const { data: listing, error } = await vmSupabase
+      .from("market_listings")
+      .select("id, seller_id, item, status")
+      .eq("id", listingId)
+      .maybeSingle();
+
+    if (error || !listing) {
+      console.error("cancelListing load error:", error);
+      showToast("Listing not found.");
+      await loadPlayerShopListings();
+      return;
+    }
+
+    if (listing.seller_id !== userId){
+      showToast("You can only cancel your own listings.");
+      return;
+    }
+
+    if (listing.status !== "active"){
+      showToast("Listing is no longer active.");
+      await loadPlayerShopListings();
+      return;
+    }
+
+    // 2) Sett status -> cancelled
+    const { data: updated, error: updErr } = await vmSupabase
+      .from("market_listings")
+      .update({ status: "cancelled" })
+      .eq("id", listingId)
+      .eq("seller_id", userId)
+      .eq("status", "active")
+      .select()
+      .maybeSingle();
+
+    if (updErr) {
+      console.error("cancelListing update error:", updErr);
+      showToast("Could not cancel listing.");
+      return;
+    }
+
+    if (!updated){
+      showToast("Listing was sold or cancelled already.");
+      await loadPlayerShopListings();
+      return;
+    }
+
+    // 3) Gi item tilbake til inventory lokalt
+    const it = updated.item || {};
+    if (it && it.id){
+      if (!state.inventory[it.id]) {
+        state.inventory[it.id] = { ...it, count: 1 };
+      } else {
+        state.inventory[it.id].count = (state.inventory[it.id].count || 0) + 1;
+      }
+    }
+
+    save();
+    renderInventory(getInventoryFilter(), getInventorySearch());
+    showToast("Listing cancelled.");
+
+    // 4) Oppdater visning
+    await loadPlayerShopListings();
+  } catch (e) {
+    console.error("cancelListing exception:", e);
+    showToast("Unexpected error when cancelling listing.");
+  }
+}
+
+
 
 // ---------- Trading state ----------
 let currentTradeFriend = null;       // { id, username }
@@ -704,6 +1200,7 @@ function switchTab(to){
 
   if (to === "inventory") renderInventory(getInventoryFilter(), getInventorySearch());
   if (to === "trading")  loadTrades?.();
+  if (to === "market")   loadPlayerShopListings();
   if (to === "profile") {
     renderProfile?.();
     loadSocial?.();
@@ -900,10 +1397,65 @@ function openBox(boxId){
 /* ---------- Market rendering ---------- */
 function renderMarket(){
   const container = document.getElementById("marketCards");
-  if(container){
-    // Dynamic rendering for all boxes
+  const featuredWrap = document.getElementById("marketFeatured");
+
+  // --- FEATURED BOX ---
+  if (featuredWrap) {
+    featuredWrap.innerHTML = "";
+
+    const featuredBox =
+      DATA.boxes.find(b => b.id === FEATURED_BOX_ID) || DATA.boxes[0];
+
+    if (featuredBox) {
+      const article = document.createElement("article");
+      article.className = "card market-featured-card";
+
+      // Her setter vi fargen på featured box vinduet
+      if (featuredBox.featuredColor){
+        article.style.setProperty("--featured-color", featuredBox.featuredColor);
+      }
+
+      article.innerHTML = `
+        <div class="market-featured-banner">// FEATURED BOX</div>
+        <div class="market-featured-main">
+          <div class="market-featured-art">
+            <div
+              class="card-media boxskin"
+              style="background-image: url('${featuredBox.design}')"
+            ></div>
+          </div>
+          <div class="market-featured-info">
+            <h2>${featuredBox.name}</h2>
+            <p>Spotlight box in the current VoidMarket rotation.</p>
+            <ul class="meta">
+              <li>Price: <strong>${featuredBox.price}</strong> Credit</li>
+              <li>Drop rates: ${ratesToStr(featuredBox.rates)}</li>
+            </ul>
+            <div class="card-actions">
+              <button class="btn accent" type="button" id="featuredBuyBtn">
+                Buy ${featuredBox.name}
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+
+      const buyBtn = article.querySelector("#featuredBuyBtn");
+      if (buyBtn) {
+        buyBtn.addEventListener("click", () => purchaseBox(featuredBox.id));
+      }
+
+      featuredWrap.appendChild(article);
+    }
+  }
+
+  // --- Vanlige box-kort under ---
+  if (container){
     container.innerHTML = "";
-    for(const box of DATA.boxes){
+    for (const box of DATA.boxes){
+      // Ikke dupliser featured box i lista hvis du ikke vil
+      if (box.id === FEATURED_BOX_ID) continue;
+
       const article = document.createElement("article");
       article.className = "card";
 
@@ -924,8 +1476,8 @@ function renderMarket(){
       const actions = document.createElement("div");
       actions.className = "card-actions";
       const btn = document.createElement("button");
-      btn.className = "btn " + (box.id === "event" ? "accent" : "primary");
-      btn.textContent = `Buy ${box.name}`;            // was "Open …"
+      btn.className = "btn primary";
+      btn.textContent = `Buy ${box.name}`;
       btn.addEventListener("click", () => purchaseBox(box.id));
       actions.appendChild(btn);
 
@@ -1136,6 +1688,20 @@ function bindEvents(){
   });
   $("#sellOneBtn").addEventListener("click", sellOne);
 
+  const playerSellBtn = document.getElementById("playerSellBtn");
+  if (playerSellBtn) {
+    playerSellBtn.addEventListener("click", () => {
+      listCurrentItemOnPlayerShop();
+    });
+  }
+
+  const psRefresh = document.getElementById("playerShopRefreshBtn");
+  if (psRefresh) {
+    psRefresh.addEventListener("click", () => {
+      loadPlayerShopListings();
+    });
+  }
+
   // Inspect-slider (depth light + warp)
   const inspectSlider = document.getElementById("inspectSlider");
   if (inspectSlider) {
@@ -1317,7 +1883,10 @@ async function mount(){
   // 2) Hent profil-metadata (created_at)
   await fetchProfileMeta();
 
-  // 3) Resten av oppstarten
+  // 3) Last Player Shop listings
+  await loadPlayerShopListings();
+
+  // 4) Resten av oppstarten
   firstRunBonuses();
   renderMarket();
   initNextBoxCountdown();
@@ -1360,7 +1929,7 @@ const ACHIEVEMENTS = [
   { /* ------------- FULL SETS -------------- */
     id: "ach_fullset_standard",
     title: "Full Set: Standard",
-    description: "Own all 7 items from the Standard Box at the same time.",
+    description: "Own all items from the Standard Box at the same time.",
     icon: "assets/boxes/boxNormal/box-normal.png",
     check: (st) => {
       const normal = getBox("normal");
@@ -1372,7 +1941,7 @@ const ACHIEVEMENTS = [
   {
     id: "ach_fullset_beta",
     title: "Full Set: Beta",
-    description: "Own all 7 items from the Beta Box at the same time.",
+    description: "Own all items from the Beta Box at the same time.",
     icon: "assets/boxes/beta/beta-box.png",
     check: (st) => {
       const beta = getBox("beta");
@@ -1384,7 +1953,7 @@ const ACHIEVEMENTS = [
   {
     id: "ach_fullset_hw25",
     title: "Full Set: hw25",
-    description: "Own all 6 items from the Halloween 25 set at the same time.",
+    description: "Own all items from the Halloween 25 set at the same time.",
     icon: "assets/boxes/Halloween/hw25/HW2025.png",
     check: (st) => {
       const HW25 = getBox("HW25");
@@ -1393,11 +1962,11 @@ const ACHIEVEMENTS = [
       return HW25.pool.every(it => st.inventory[it.id]?.count > 0);
     }
   },
-  /*
+  
   {
     id: "ach_fullset_xmas25",
     title: "Full Set: xmas25",
-    description: "Own all 6 items from the Xmas 25 set at the same time.",
+    description: "Own all items from the Xmas 25 set at the same time.",
     icon: "assets/boxes/Xmas/xmas25/xmas2025.png",
     check: (st) => {
       const XMAS25 = getBox("XMAS25");
@@ -1405,7 +1974,20 @@ const ACHIEVEMENTS = [
       // must have at least one of each item from normal.pool
       return XMAS25.pool.every(it => st.inventory[it.id]?.count > 0);
     }
-  },*/
+  },
+
+  {
+    id: "ach_fullset_fm25n",
+    title: "Full Set: Fisherman 25",
+    description: "Own all items from the Fisherman 25 set set at the same time.",
+    icon: "assets/boxes/Series/fisherman25N/fm25n-box.png",
+    check: (st) => {
+      const fm25n = getBox("fisherman25n");
+      if (!fm25n) return false;
+      // must have at least one of each item from normal.pool
+      return fm25n.pool.every(it => st.inventory[it.id]?.count > 0);
+    }
+  },
 
   { /* ------------- RARITY -------------- */
     id: "ach_first_common",
@@ -1607,7 +2189,21 @@ const TITLES = [
     description: "Reached 100 000 credits in your wallet.",
     rarity: "LEGENDARY",
     requiresAchievements: ["ach_100000_credits"]
-  }
+  },
+  {
+    id: "title_xmas25",
+    name: "Santa's Helper",
+    description: "Completed the xmas 25 set",
+    rarity: "EPIC",
+    requiresAchievements: ["ach_fullset_xmas25"]
+  },
+  {
+    id: "title_captain",
+    name: "Captain",
+    description: "Completed the Fisherman 25 set",
+    rarity: "LEGENDARY",
+    requiresAchievements: ["ach_fullset_fm25n"]
+  },
 ];
 
 function getTitleLabelById(id) {

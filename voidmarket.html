@@ -139,6 +139,46 @@
       color:var(--muted);
     }
 
+    /* ----------------------------------------
+    SIDE PIXEL BANNERS (ONLY ON WIDE SCREENS)
+    ---------------------------------------- */
+
+    body.vm-game .vm-side-banner{
+      position: fixed;
+      top: 46px;         /* rett under headeren */
+      bottom: 46px;      /* litt luft nederst */
+      width: 300px;      /* bredden på banneret */
+      display: none;     /* default: skjult, vises via media-query */
+      z-index: 0;        /* under header/main, som har z-index:1 */
+    }
+
+    body.vm-game .vm-side-banner-left{
+      left: 16px;
+    }
+
+    body.vm-game .vm-side-banner-right{
+      right: 16px;
+    }
+
+    body.vm-game .vm-side-banner img{
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      image-rendering: pixelated;        /* så det ser ordentlig pixel ut */
+      border-radius: 4px;
+      /* border: 1px solid #111827; */  /* Ramme rundt banner bildet */
+      box-shadow: 0 0 18px rgba(0,0,0,0.9); 
+      opacity: 0.95;
+    }
+
+    /* Vis bannere bare når skjermen er bred nok
+       til at de ikke kolliderer med main (1100px) */
+    @media (min-width: 1440px){
+      body.vm-game .vm-side-banner{
+        display: block;
+      }
+    }
+
     /* Tabs = gammel nett-portal/launcher */
     body.vm-game .vm-tabs{
       max-width:1120px;
@@ -306,6 +346,78 @@
         width:100%;
       }
     }
+
+        /* FEATURED BOX – hero card øverst i Market */
+    .market-featured{
+      margin-bottom: 12px;
+    }
+
+    body.vm-game .market-featured-card{
+      --featured-color: #a855f7; /* default fallback */
+      border-radius: 4px;
+      border: 2px solid var(--featured-color);
+      background: #040713;
+      box-shadow:
+        0 0 0 1px #000,
+        0 0 22px var(--featured-color);
+    }
+
+    .market-featured-banner{
+      padding: 4px 8px;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      color: #e5ecff;
+      background: linear-gradient(90deg, #4c1d95, #1f2937);
+      border-bottom: 1px solid #111827;
+    }
+
+    .market-featured-main{
+      display: grid;
+      grid-template-columns: minmax(0, 220px) minmax(0, 1fr);
+      gap: 10px;
+      align-items: stretch;
+      padding: 8px 10px 10px;
+    }
+
+    .market-featured-art .card-media{
+      height: 140px;
+      border: 1px solid #111827;
+      background-color: #020308;
+    }
+
+    .market-featured-info h2{
+      margin: 0 0 4px;
+      font-size: 14px;
+      letter-spacing: 0.10em;
+      text-transform: uppercase;
+    }
+
+    .market-featured-info p{
+      margin: 0 0 6px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .market-featured-info .meta{
+      margin-top: 4px;
+      font-size: 11px;
+    }
+
+    .market-featured-info .card-actions{
+      margin-top: 8px;
+      padding: 0;
+      border-top: none;
+      justify-content: flex-start;
+      background: transparent;
+    }
+
+    @media (max-width: 700px){
+      .market-featured-main{
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
 
     .cd-image-wrapper {
       margin-top: 8px;
@@ -550,9 +662,9 @@
       border-color:#16a34a;
     }
 
-    body.vm-game .btn.accent{
-      background:linear-gradient(180deg,#4f46e5,#312e81);
-      border-color:#4f46e5;
+    .btn.accent{
+      background-color: var(--featured-color);
+      border-color: var(--featured-color);
     }
 
     body.vm-game .btn-ghost{
@@ -682,6 +794,15 @@
 
 </head>
 <body class="vm-game">
+
+  <!-- SIDE PIXEL BANNERS -->
+  <div class="vm-side-banner vm-side-banner-left">
+    <img src="assets/banners/xmas25Banner.jpg" alt="Local ad left" />
+  </div>
+  <div class="vm-side-banner vm-side-banner-right">
+    <img src="assets/banners/doYouWantToColabPink.jpg" alt="Local ad right" />
+  </div>
+
   <header class="vm-header">
     <div class="brand">
       <img src="assets/boxes/beta/bta-sko.png" class="logo" alt="">
@@ -740,7 +861,37 @@
         </div>
       </header>
 
+      <!-- FEATURED BOX -->
+      <div id="marketFeatured" class="market-featured"></div>
+
       <div id="marketCards" class="cards"></div>
+
+      <!-- PLAYER SHOP/AUCTION -->
+      <div class="player-shop">
+        <div class="player-shop-header">
+          <h3>Player Auction</h3>
+          <p class="muted small">
+            Buy items listed by other collectors. Max 5 active listings per player.
+          </p>
+        </div>
+
+        <div class="player-shop-toolbar">
+          <span id="playerShopMyListingsLabel" class="muted small"></span>
+          <button id="playerShopRefreshBtn" class="btn tiny" type="button">
+            Refresh
+          </button>
+        </div>
+
+        <!-- Alle aktive listings (alle spillere) -->
+        <div id="playerShopList" class="player-shop-list"></div>
+        <p id="playerShopEmpty" class="muted small">No active listings yet.</p>
+
+        <!-- My listings -->
+        <div class="player-shop-subheader">My listings</div>
+        <div id="playerShopMine" class="player-shop-list"></div>
+        <p id="playerShopMineEmpty" class="muted small">You have no active listings.</p>
+      </div>
+
     </section>
 
 
@@ -956,6 +1107,7 @@
             <div class="modal-actions">
               <button id="openBoxBtn" class="btn primary" style="display:none">Open box</button> 
               <button id="sellOneBtn" class="btn">Sell 1</button>
+              <button id="playerSellBtn" class="btn ghost">List on Player Auction</button>
             </div>
             <div class="modal-profile-actions">
               <span class="muted small">Show on profile:</span>
