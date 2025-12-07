@@ -300,7 +300,7 @@ const DATA = {
       name: "Beta Box",
       price: 200,
       design: "assets/boxes/beta/beta-box.png",
-      rates: { COMMON: 50, RARE: 30, EPIC: 16, LEGENDARY: 3 , MYTHIC: 1 },
+      rates: { COMMON: 50, RARE: 30, EPIC: 17, LEGENDARY: 3 , MYTHIC: 0 },
       featuredColor: "#facc15",
       pool: [
         { id: "bta-pos", name: "Poisetle",          rarity: RARITY.COMMON,    img: "assets/boxes/beta/bta-pos.png", description: "VoidQuest 01: Poisetle, found in green terrain, tamable", value: 40 },
@@ -317,7 +317,7 @@ const DATA = {
       name: "Halloween 25 Box",
       price: 800,
       design: "assets/boxes/Halloween/hw25/HW2025.png",
-      rates: { COMMON: 60, RARE: 20, EPIC: 16, LEGENDARY: 3, MYTHIC: 1 },
+      rates: { COMMON: 60, RARE: 20, EPIC: 18, LEGENDARY: 2, MYTHIC: 0 },
       featuredColor: "#a855f7",
       pool: [
         { id: "hw25-sc1", name: "Scream",           rarity: RARITY.COMMON,    img: "assets/boxes/Halloween/hw25/hw25-sc1.png", description: "Halloween25 01: Scream Card, First item in the Halloween 2025 event box. Fun world!", value: 70 },
@@ -334,7 +334,7 @@ const DATA = {
       name: "Xmas 25 Box",
       price: 800,
       design: "assets/boxes/Xmas/xmas25/xmas2025.png",
-      rates: { COMMON: 63, RARE: 19, EPIC: 14, LEGENDARY: 3, MYTHIC: 1 },
+      rates: { COMMON: 63, RARE: 20, EPIC: 15, LEGENDARY: 2, MYTHIC: 0 },
       featuredColor: "#ff0000ff",
       pool: [
         { id: "xmas25-cc1", name: "Candy Cane",     rarity: RARITY.COMMON,    img: "assets/boxes/Xmas/xmas25/xm25-cc1.png",   description: "Xmas25 01: Candy Cane Card, First item in the Xmas 2025 event box. No screaming in church!", value: 86 },
@@ -352,7 +352,7 @@ const DATA = {
       name: "Fisherman 25 box",
       price: 750,
       design: "assets/boxes/Series/fisherman25N/fm25n-box.png",
-      rates: { COMMON: 70, RARE: 20, EPIC: 5, LEGENDARY: 3, MYTHIC: 2 },
+      rates: { COMMON: 70, RARE: 20, EPIC: 7, LEGENDARY: 3, MYTHIC: 0 },
       pool: [
         { id: "fm25n-adc",  name: "Abandoned Dock", rarity: RARITY.COMMON,    img: "assets/boxes/Series/fisherman25N/fm25n-adc.png",   description: "Fisherman25 01: An abandoned dock, used to fish for many years", value: 7 },
         { id: "fm25n-vi2",  name: "Viking Ship",    rarity: RARITY.COMMON,    img: "assets/boxes/Series/fisherman25N/fm25n-vi2.png",   description: "Fisherman25 02: Viking Ship, Crossing the big sea hoping for land to plunder", value: 37 },
