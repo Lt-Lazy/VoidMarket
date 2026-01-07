@@ -381,7 +381,7 @@ let state = {
 //Endre datoen + navnet når det planlegges en ny box.
 const NEXT_BOX_RELEASE = {
   active: true,
-  at: "2026-01-01T20:30:00+01:00",
+  at: "2026-02-01T20:30:00+01:00",
   name: "Golden days",
   
   //URL til bilde av boxen

@@ -599,7 +599,7 @@
     const SUPABASE_URL = "https://vsasxahjavdstcrcsghg.supabase.co"; 
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZzYXN4YWhqYXZkc3RjcmNzZ2hnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMyNDI4MzgsImV4cCI6MjA3ODgxODgzOH0.g3DF07JppjF19-7FT7wNk--Ns7wbC83jcC-eZtjoiGs";
 
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     function showError(msg){
       document.getElementById("authErr").textContent = msg || "";
@@ -662,7 +662,7 @@
       }
 
       // 2) Opprett tom save
-      const { error: saveErr } = await supabase
+      const { error: saveErr } = await supabaseClient
         .from("saves")
         .insert({
           user_id: userId,
@@ -680,7 +680,7 @@
 
     // Sørger for at det finnes en save-rad (brukes ved login)
     async function ensureSaveRow(userId) {
-      const { data: saveRow, error: sErr } = await supabase
+      const { data: saveRow, error: sErr } = await supabaseClient
         .from("saves")
         .select("id")
         .eq("user_id", userId)
@@ -692,7 +692,7 @@
       }
 
       if (!saveRow) {
-        const { error: saveInsertErr } = await supabase
+        const { error: saveInsertErr } = await supabaseClient
           .from("saves")
           .insert({
             user_id: userId,
@@ -717,7 +717,7 @@
         return showError("Enter email and password.");
       }
 
-      const { data, error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabaseClient.auth.signInWithPassword({
         email,
         password
       });
@@ -742,7 +742,7 @@
 
       // 1) Forsøk å hente profil
       try {
-        const { data: prof, error: profErr } = await supabase
+        const { data: prof, error: profErr } = await supabaseClient
           .from("profiles")
           .select("username")
           .eq("id", user.id)
