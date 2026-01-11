@@ -15,6 +15,48 @@ if (typeof window !== "undefined" && window.supabase) {
 
 let profileMeta = null;
 
+async function enforceLegalSession({ silent = false } = {}) {
+  try {
+    // 1) Auth session må finnes
+    if (!vmSupabase) throw new Error("vmSupabase not initialized");
+
+    const { data: authData, error: authErr } = await vmSupabase.auth.getUser();
+    if (authErr || !authData?.user) {
+      if (!silent) console.warn("No auth user:", authErr);
+      throw new Error("No auth user");
+    }
+
+    const userId = authData.user.id;
+
+    // 2) profiles må finnes og være approved
+    const { data: prof, error: profErr } = await vmSupabase
+      .from("profiles")
+      .select("id, approved")
+      .eq("id", userId)
+      .maybeSingle();
+
+    if (profErr) {
+      if (!silent) console.error("Profile fetch error:", profErr);
+      // Hvis DB feiler midlertidig kan du velge å IKKE kaste ut.
+      // Men siden du vil være streng: kast ut.
+      throw new Error("Profile fetch failed");
+    }
+
+    if (!prof || prof.approved !== true) {
+      throw new Error("Profile missing or not approved");
+    }
+
+    // Lovlig
+    return { ok: true, userId };
+  } catch (e) {
+    // Ikke lovlig → logg ut og redirect
+    try { await vmSupabase?.auth.signOut(); } catch {}
+    try { localStorage.removeItem("vm_session_v1"); } catch {}
+    location.replace("index.html");
+    return { ok: false };
+  }
+}
+
 // ---------- Global chat ----------
 let globalChatChannel = null;
 let globalChatBuffer = []; // siste meldinger i minnet
@@ -361,6 +403,21 @@ const DATA = {
         { id: "fm25n-sm5",  name: "Dead Crew",      rarity: RARITY.LEGENDARY, img: "assets/boxes/Series/fisherman25N/fm25n-sm5.png",   description: "Fisherman25 05: Dead Crew, the plunder group did in fact not find a land to plunder", value: 120000 },
       ]
     },
+
+    /*
+    {
+      id: "goldenDays25",
+      name: "Golden days Box",
+      price: 650,
+      design: "assets/boxes/knife/goldenDays25/gd25-box.png",
+      rates: { COMMON: 50, RARE: 30, EPIC: 16, LEGENDARY: 3 , MYTHIC: 1 },
+      pool: [
+
+      
+        { id: "gd25-gbk7", name: "Golden butterfly knife",   rarity: RARITY.LEGENDARY,    img: "assets/boxes/knife/goldenDays25/gd25-gbk7.png", description: "Golden days 07: This one of a kind butterfly knife marks the participation of the golden days of voidmarket", value: 130000 },
+
+      ]
+    },*/
     
   ]
 };
@@ -584,9 +641,10 @@ async function loadPlayerShopListings(){
 }
 
 
-// Kalles fra item-modal: legg ut 1 stk av currentModalId til salgs
+// Kalles fra item-modal: legg ut 1 stk av currentModalId til salgs (SERVER-AUTH)
 async function listCurrentItemOnPlayerShop(){
   if (!currentModalId) return;
+
   const it = state.inventory[currentModalId];
   if (!it || it.count <= 0) {
     showToast("No items left to list.");
@@ -595,20 +653,20 @@ async function listCurrentItemOnPlayerShop(){
 
   const session = getSession?.();
   const userId = session?.userId;
-  const username = session?.username;
   if (!vmSupabase || !userId) {
     showToast("Online features are not available.");
     return;
   }
 
   try {
-    // Sjekk listing-limit
+    // UX-sjekk: listing-limit (DB håndhever også i RPC, men dette gir rask melding)
     const currentCount = await fetchMyActiveListingsCount();
     if (currentCount >= PLAYER_SHOP_MAX_LISTINGS) {
       showToast("You already have 5 active listings.");
       return;
     }
 
+    // Pris-prompt
     const suggested = it.value || 0;
     const defaultStr = suggested > 0 ? String(suggested) : "";
     const priceStr = prompt(`Set price (Credits) for 1x ${it.name}:`, defaultStr);
@@ -620,178 +678,67 @@ async function listCurrentItemOnPlayerShop(){
       return;
     }
 
-    // Fjern 1 stk fra inventory lokalt
-    it.count -= 1;
-    if (it.count <= 0){
-      delete state.inventory[currentModalId];
-      closeItemModal();
-    } else {
-      const cntEl = document.getElementById("modalCount");
-      if (cntEl) cntEl.textContent = "x" + it.count;
-    }
-
-    save();
-    renderInventory(getInventoryFilter(), getInventorySearch());
-
-    // Bygg item-snapshot som lagres i listing
-    const payloadItem = {
-      id: it.id,
-      name: it.name,
-      rarity: it.rarity,
-      img: it.img,
-      description: it.description,
-      value: it.value,
-      type: it.type || null,
-      boxId: it.boxId || null
-    };
-
-    const { error } = await vmSupabase
-      .from("market_listings")
-      .insert({
-        seller_id: userId,
-        seller_username: username,
-        item_id: it.id,
-        item: payloadItem,
-        price: price,
-        status: "active"
-      });
+    // ✅ DB gjør: trekk 1 item fra inventory + opprett listing
+    const { data, error } = await vmSupabase.rpc("vm_market_list", {
+      p_item_id: currentModalId,
+      p_price: price
+    });
 
     if (error) {
-      console.error("listCurrentItemOnPlayerShop insert error:", error);
-      // roll-back: gi itemet tilbake
-      if (!state.inventory[currentModalId]) {
-        state.inventory[currentModalId] = { ...it, count: 1 };
-      } else {
-        state.inventory[currentModalId].count = (state.inventory[currentModalId].count || 0) + 1;
-      }
-      save();
-      renderInventory(getInventoryFilter(), getInventorySearch());
-      showToast("Could not create listing.");
+      console.error("vm_market_list error:", error);
+      showToast(error.message || "Could not create listing.");
       return;
     }
 
+    // ✅ Oppdater inventory fra DB (sannheten)
+    if (data?.inventory) state.inventory = data.inventory;
+
+    // Oppdater modal count / lukk modal hvis itemet ble 0
+    const itNow = state.inventory[currentModalId];
+    if (!itNow) {
+      closeItemModal();
+    } else {
+      const cntEl = document.getElementById("modalCount");
+      if (cntEl) cntEl.textContent = "x" + (itNow.count || 0);
+    }
+
+    // Re-render inventory + listings
+    renderInventory(getInventoryFilter(), getInventorySearch());
     showToast("Listing created!");
     await loadPlayerShopListings();
+
   } catch (e) {
     console.error("listCurrentItemOnPlayerShop exception:", e);
     showToast("Unexpected error when creating listing.");
   }
 }
 
-// Gir selgeren credits etter at en listing er kjøpt
-async function creditSellerForListing(listing){
-  if (!vmSupabase || !listing?.seller_id || !listing?.price) return;
 
-  try {
-    const sellerId = listing.seller_id;
-    const amount   = listing.price;
-
-    const { data, error } = await vmSupabase
-      .from("saves")
-      .select("coins")
-      .eq("user_id", sellerId)
-      .maybeSingle();
-
-    if (error) {
-      console.error("creditSellerForListing load error:", error);
-      return;
-    }
-
-    const oldCoins = data?.coins ?? 0;
-    const newCoins = oldCoins + amount;
-
-    const { error: updErr } = await vmSupabase
-      .from("saves")
-      .update({ coins: newCoins })
-      .eq("user_id", sellerId);
-
-    if (updErr) {
-      console.error("creditSellerForListing update error:", updErr);
-    }
-  } catch (e) {
-    console.error("creditSellerForListing exception:", e);
-  }
-}
-
-// Kjøp en listing: trekker coins fra kjøper, gir item, markerer listing som solgt og krediterer selger
 async function buyListing(listingId){
   const session = getSession?.();
   const userId = session?.userId;
   if (!vmSupabase || !userId) return;
 
   try {
-    // 1) Les listing
-    const { data: listing, error } = await vmSupabase
-      .from("market_listings")
-      .select("id, seller_id, seller_username, item_id, item, price, status, buyer_id")
-      .eq("id", listingId)
-      .maybeSingle();
+    const { data, error } = await vmSupabase.rpc("vm_market_buy", {
+      p_listing_id: String(listingId)
+    });
 
-    if (error || !listing) {
-      console.error("buyListing load error:", error);
-      showToast("Listing not found.");
+    if (error) {
+      console.error("vm_market_buy error:", error);
+      showToast(error.message || "Could not complete purchase.");
       await loadPlayerShopListings();
       return;
     }
 
-    if (listing.status !== "active") {
-      showToast("This listing is no longer available.");
-      await loadPlayerShopListings();
-      return;
-    }
+    // DB er autoriteten: ta imot oppdatert coins/inventory
+    if (typeof data?.coins === "number") state.coins = data.coins;
+    if (data?.inventory) state.inventory = data.inventory;
 
-    if (listing.seller_id === userId) {
-      showToast("You can't buy your own listing.");
-      return;
-    }
-
-    if (state.coins < listing.price) {
-      showToast("Not enough credits!");
-      return;
-    }
-
-    // 2) Marker som solgt (atomic-ish check på status)
-    const { data: updated, error: updErr } = await vmSupabase
-      .from("market_listings")
-      .update({ status: "sold", buyer_id: userId })
-      .eq("id", listingId)
-      .eq("status", "active")
-      .select()
-      .maybeSingle();
-
-    if (updErr) {
-      console.error("buyListing update error:", updErr);
-      showToast("Could not complete purchase.");
-      return;
-    }
-
-    if (!updated) {
-      showToast("Someone else bought this listing first.");
-      await loadPlayerShopListings();
-      return;
-    }
-
-    // 3) Trekk coins og gi item til kjøper lokalt
-    state.coins -= updated.price;
     updateCoins();
-
-    const it = updated.item || {};
-    if (it && it.id) {
-      if (!state.inventory[it.id]) {
-        state.inventory[it.id] = { ...it, count: 1 };
-      } else {
-        state.inventory[it.id].count = (state.inventory[it.id].count || 0) + 1;
-      }
-    }
-
-    save();
     renderInventory(getInventoryFilter(), getInventorySearch());
     showToast("Item purchased!");
 
-    // 4) Krediter selger i Supabase
-    await creditSellerForListing(updated);
-
-    // 5) Oppdater visning
     await loadPlayerShopListings();
   } catch (e) {
     console.error("buyListing exception:", e);
@@ -799,84 +746,37 @@ async function buyListing(listingId){
   }
 }
 
+
 async function cancelListing(listingId){
   const session = getSession?.();
   const userId  = session?.userId;
   if (!vmSupabase || !userId) return;
 
-  if (!confirm("Cancel this listing and return the item to your inventory?")) {
-    return;
-  }
+  if (!confirm("Cancel this listing and return the item to your inventory?")) return;
 
   try {
-    // 1) Hent listing
-    const { data: listing, error } = await vmSupabase
-      .from("market_listings")
-      .select("id, seller_id, item, status")
-      .eq("id", listingId)
-      .maybeSingle();
+    const { data, error } = await vmSupabase.rpc("vm_market_cancel", {
+      p_listing_id: String(listingId)
+    });
 
-    if (error || !listing) {
-      console.error("cancelListing load error:", error);
-      showToast("Listing not found.");
+    if (error) {
+      console.error("vm_market_cancel error:", error);
+      showToast(error.message || "Could not cancel listing.");
       await loadPlayerShopListings();
       return;
     }
 
-    if (listing.seller_id !== userId){
-      showToast("You can only cancel your own listings.");
-      return;
-    }
+    if (data?.inventory) state.inventory = data.inventory;
 
-    if (listing.status !== "active"){
-      showToast("Listing is no longer active.");
-      await loadPlayerShopListings();
-      return;
-    }
-
-    // 2) Sett status -> cancelled
-    const { data: updated, error: updErr } = await vmSupabase
-      .from("market_listings")
-      .update({ status: "cancelled" })
-      .eq("id", listingId)
-      .eq("seller_id", userId)
-      .eq("status", "active")
-      .select()
-      .maybeSingle();
-
-    if (updErr) {
-      console.error("cancelListing update error:", updErr);
-      showToast("Could not cancel listing.");
-      return;
-    }
-
-    if (!updated){
-      showToast("Listing was sold or cancelled already.");
-      await loadPlayerShopListings();
-      return;
-    }
-
-    // 3) Gi item tilbake til inventory lokalt
-    const it = updated.item || {};
-    if (it && it.id){
-      if (!state.inventory[it.id]) {
-        state.inventory[it.id] = { ...it, count: 1 };
-      } else {
-        state.inventory[it.id].count = (state.inventory[it.id].count || 0) + 1;
-      }
-    }
-
-    save();
     renderInventory(getInventoryFilter(), getInventorySearch());
     showToast("Listing cancelled.");
-
-    // 4) Oppdater visning
     await loadPlayerShopListings();
   } catch (e) {
     console.error("cancelListing exception:", e);
     showToast("Unexpected error when cancelling listing.");
   }
 }
+
 
 
 
@@ -1033,9 +933,8 @@ async function save() {
   if (!vmSupabase || !userId) return;
 
   try {
+    // 🔒 SAFE payload: IKKE coins, IKKE inventory
     const payload = {
-      coins: state.coins,
-      inventory: state.inventory,
       achievements: state.achievements,
       titles: state.titles,
       current_title_id: state.currentTitleId || null,
@@ -1047,9 +946,7 @@ async function save() {
       .update(payload)
       .eq("user_id", userId);
 
-    if (error) {
-      console.error("Supabase save error:", error);
-    }
+    if (error) console.error("Supabase save error:", error);
   } catch (e) {
     console.error("Supabase save exception:", e);
   }
@@ -1091,6 +988,10 @@ async function load() {
     console.error("Supabase load exception:", e);
   }
 }
+
+setInterval(() => {
+  enforceLegalSession({ silent: true });
+}, 30000); // hvert 30. sekund
 
 
 function fmt(num){ return new Intl.NumberFormat("en-US").format(num); }
@@ -1290,26 +1191,48 @@ function resetInspectTransform(){
 }
 
 
-function sellOne(){
-  if(!currentModalId) return;
-  const it = state.inventory[currentModalId];
-  if(!it || it.count <= 0) return;
+async function sellOne(){
+  if (!currentModalId) return;
 
-  state.coins += (it.value || 0);
-  it.count -= 1;
-  if(it.count <= 0){
-    delete state.inventory[currentModalId];
-    closeItemModal();
-  }else{
-    $("#modalCount").textContent = "x" + it.count;
+  const session = getSession?.();
+  const userId = session?.userId;
+  if (!vmSupabase || !userId) return;
+
+  try {
+    const { data, error } = await vmSupabase.rpc("vm_sell_one", {
+      p_item_id: currentModalId
+    });
+
+    if (error) {
+      console.error("vm_sell_one error:", error);
+      showToast(error.message || "Could not sell item.");
+      return;
+    }
+
+    // DB er autoriteten
+    if (typeof data?.coins === "number") state.coins = data.coins;
+    if (data?.inventory) state.inventory = data.inventory;
+
+    // Oppdater modal UI
+    const itNow = state.inventory[currentModalId];
+    if (!itNow) {
+      closeItemModal();
+    } else {
+      const cntEl = document.getElementById("modalCount");
+      if (cntEl) cntEl.textContent = "x" + (itNow.count || 0);
+    }
+
+    updateCoins();
+    renderInventory(getInventoryFilter(), getInventorySearch());
+    evaluateAchievements?.();
+
+    showToast("Sold 1 for +" + fmt(data?.sold_for || 0) + " Credit");
+  } catch (e) {
+    console.error("sellOne exception:", e);
+    showToast("Unexpected error when selling.");
   }
-
-  save();
-  updateCoins();
-  renderInventory(getInventoryFilter(), getInventorySearch());
-  evaluateAchievements();
-  showToast("Sold 1 for +" + fmt(it.value || 0) + " Credit ");
 }
+
 
 /* ---------- Box opening & reveal (data-driven) ---------- */
 function rollRarityFor(box){
@@ -1578,71 +1501,117 @@ function makeBoxInventoryEntry(box){
   };
 }
 
-// Buy a box: spend coins, receive ONE box in inventory
-function purchaseBox(boxId){
+// Buy a box (SERVER-AUTH): DB trekker coins + legger box i inventory
+async function purchaseBox(boxId){
   const box = getBox(boxId);
   if(!box) return;
 
+  // UX-sjekk (ikke sikkerhet): for å gi rask melding i UI
   if(state.coins < box.price){
     showToast("Not enough credits!");
     return;
   }
-  state.coins -= box.price;
-  updateCoins();
 
-  // add the box item to inventory
-  const key = `box:${box.id}`;
-  if(!state.inventory[key]){
-    state.inventory[key] = { ...makeBoxInventoryEntry(box), count: 1 };
-  } else {
-    state.inventory[key].count += 1;
+  const session = getSession?.();
+  const userId = session?.userId;
+  if (!vmSupabase || !userId) {
+    showToast("Not logged in.");
+    return;
   }
 
-  save();
-  renderInventory(getInventoryFilter(), getInventorySearch());
-  showToast(`${box.name} added to inventory.`);
+  try {
+    // ✅ DB gjør sjekk + oppdatering
+    const { data, error } = await vmSupabase.rpc("vm_purchase_box", {
+      p_box_id: boxId
+    });
+
+    if (error) {
+      console.error("vm_purchase_box error:", error);
+      showToast(error.message || "Could not buy box.");
+      return;
+    }
+
+    // ✅ DB returnerer oppdatert coins + inventory
+    state.coins = data.coins ?? state.coins;
+    state.inventory = data.inventory ?? state.inventory;
+
+    updateCoins();
+    renderInventory(getInventoryFilter(), getInventorySearch());
+    showToast(`${box.name} added to inventory.`);
+  } catch (e) {
+    console.error("vm_purchase_box exception:", e);
+    showToast("Unexpected error.");
+  }
 }
 
-function openBoxFromInventory(itemId){
+
+async function openBoxFromInventory(itemId){
   const it = state.inventory[itemId];
   if(!it || it.type !== ITEM_TYPE.BOX) return;
+
   const box = getBox(it.boxId);
   if(!box) return;
 
-  // show opening animation
+  // Vis åpne-animasjon med en gang
   showOpening(box.id);
 
-  // roll the result
-  const rarity = rollRarityFor(box);
-  const item = pickItem(box.pool, rarity);
-
-  setTimeout(() => {
-    // consume ONE box
-    it.count -= 1;
-    if(it.count <= 0) delete state.inventory[itemId];
-
-    // grant the rolled collectible
-    if(!state.inventory[item.id]){
-      state.inventory[item.id] = { ...item, type: ITEM_TYPE.COLLECTIBLE, count: 1 };
-    } else {
-      state.inventory[item.id].count += 1;
-    }
-
-    save();
-    renderInventory(getInventoryFilter(), getInventorySearch());
+  const session = getSession?.();
+  const userId = session?.userId;
+  if (!vmSupabase || !userId) {
     hideOpening();
-    showReveal(item);
+    showToast("Not logged in.");
+    return;
+  }
 
-    const usernameForChat =
-      profileMeta?.username || getSession()?.username || "Someone";
+  try {
+    // ✅ DB gjør: sjekk box finnes, trekk 1 box, rull item, legg item i inventory
+    const { data, error } = await vmSupabase.rpc("vm_open_box", {
+      p_box_id: it.boxId
+    });
 
-    if (rarity === RARITY.LEGENDARY || rarity === RARITY.MYTHIC) {
-      postUnboxGlobalMessage(usernameForChat, rarity, item);
+    if (error) {
+      console.error("vm_open_box error:", error);
+      hideOpening();
+      showToast(error.message || "Could not open box.");
+      return;
     }
 
-    evaluateAchievements?.(); // if you use achievements
-  }, 1100);
+    // data forventes å være:
+    // { inventory: {...}, rolled_item: {...}, rarity: "COMMON" | ... }
+    const rolledItem = data?.rolled_item;
+    const rolledRarity = data?.rarity;
+
+    // Vent litt så UX matcher animasjonen (som før)
+    setTimeout(() => {
+      // ✅ Oppdater state fra DB (sannheten)
+      if (data?.inventory) state.inventory = data.inventory;
+
+      renderInventory(getInventoryFilter(), getInventorySearch());
+      hideOpening();
+
+      if (rolledItem) {
+        showReveal(rolledItem);
+
+        const usernameForChat =
+          profileMeta?.username || getSession()?.username || "Someone";
+
+        if (rolledRarity === RARITY.LEGENDARY || rolledRarity === RARITY.MYTHIC) {
+          postUnboxGlobalMessage(usernameForChat, rolledRarity, rolledItem);
+        }
+      } else {
+        showToast("Opened, but no item returned.");
+      }
+
+      evaluateAchievements?.();
+    }, 1100);
+
+  } catch (e) {
+    console.error("vm_open_box exception:", e);
+    hideOpening();
+    showToast("Unexpected error.");
+  }
 }
+
 
 function firstRunBonuses(){
   if(Object.keys(state.inventory).length === 0 && state.coins === 0){
@@ -1876,6 +1845,12 @@ async function mount(){
   const pu = document.getElementById("profileUser");
   if(pn) pn.textContent = uname;
   if(pu) pu.textContent = uname;
+
+  (async function boot(){
+    await enforceLegalSession(); // 🔥 dette kaster ut hvis user ikke finnes / ikke approved
+    await init(); // resten av spillet
+  })();
+
 
   // 1) Last save-data
   await load();

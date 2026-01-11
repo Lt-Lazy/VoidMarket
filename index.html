@@ -461,7 +461,7 @@
             <div class="vm-auth-form-inner">
               <form id="authForm" autocomplete="off">
                 <table class="vm-auth-table">
-                  <tr style="display: none;">
+                  <tr id="usernameRow" style="display: none;">
                     <th>
                       <label for="username">Display name</label>
                     </th>
@@ -510,9 +510,8 @@
                 <div class="vm-auth-err" id="authErr"></div>
 
                 <div class="vm-auth-actions">
-                  <button type="button" id="loginBtn" class="btn primary">
-                    Sign in
-                  </button>
+                  <button type="button" id="loginBtn" class="btn primary">Sign in</button>
+                  <button type="button" id="signupBtn" class="btn accent">Create account</button>
                 </div>
 
                 <div class="vm-auth-hint">
@@ -626,7 +625,7 @@
       if (!name) return false;
 
       try {
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
           .from("profiles")
           .select("id")
           .ilike("username", name)  // case-insensitive
@@ -648,7 +647,7 @@
     // Kun brukt ved registrering / første innlogging
     async function createProfileAndSave(userId, username, email) {
       // 1) Opprett profil (forventer at den ikke finnes fra før)
-      const { error: profErr } = await supabase
+      const { error: profErr } = await supabaseClient
         .from("profiles")
         .insert({
           id: userId,
@@ -728,7 +727,7 @@
           return showError("Incorrect email or password.");
         }
         if (error.message.includes("Email not confirmed")) {
-          return showError("Please confirm your email first (check your inbox).");
+          return showError("Please confirm your email first.");
         }
         return showError(error.message || "Could not sign in. Try again.");
       }
@@ -740,69 +739,72 @@
 
       let displayName = email;
 
-      // 1) Forsøk å hente profil
+      // 1) Hent profil (inkl. approved)
       try {
         const { data: prof, error: profErr } = await supabaseClient
           .from("profiles")
-          .select("username")
+          .select("username, approved")
           .eq("id", user.id)
           .maybeSingle();
 
         if (profErr) {
           console.error("profile fetch error", profErr);
+          await supabaseClient.auth.signOut();
           return showError("Could not load profile. Try again later.");
         }
 
+        // 🔒 IKKE GODKJENT → STOPP HER
+        if (prof && prof.approved === false) {
+          await supabaseClient.auth.signOut();
+          return showError(
+            "Your account is pending approval.\n" +
+            "Join our Discord and tell us your username."
+          );
+        }
+
         if (!prof) {
-          // Første gang denne brukeren logger inn → opprett profil + save nå
-          const initialName = (username && username.length >= 3) ? username : email;
+          // Første login → opprett profil (approved = false som default)
+          const metaName = user?.user_metadata?.username;
+          const initialName =
+            (metaName && String(metaName).trim().length >= 3) ? String(metaName).trim()
+            : (username && username.length >= 3) ? username
+            : email;
+
           try {
             await createProfileAndSave(user.id, initialName, email);
           } catch (e) {
             console.error("createProfileAndSave on login error", e);
+            await supabaseClient.auth.signOut();
             return showError("Could not create profile. Try again later.");
           }
-          displayName = initialName;
-        } else {
-          // Profil finnes – hent username/fallback til epost
-          if (prof.username) {
-            displayName = prof.username;
-          } else if (username && username.length >= 3) {
-            // prøv å sette nytt username hvis det er ledig
-            try {
-              const taken = await isUsernameTaken(username);
-              if (taken) {
-                showError("That username is already taken. Keep your current name or pick another next time.");
-                displayName = email; // fallback
-              } else {
-                displayName = username;
-                const { error: upErr } = await supabase
-                  .from("profiles")
-                  .update({ username })
-                  .eq("id", user.id);
-                if (upErr) {
-                  console.error("profile update error", upErr);
-                }
-              }
-            } catch (e) {
-              console.error("profile update exception", e);
-              displayName = email;
-            }
-          }
+
+          // Ny bruker er ikke godkjent enda
+          await supabaseClient.auth.signOut();
+          return showError(
+            "Your account is pending approval.\n" +
+            "Join our Discord and tell us your username."
+          );
+        }
+
+        // Profil finnes og er godkjent
+        if (prof.username) {
+          displayName = prof.username;
         }
 
       } catch (e) {
         console.error("profile fetch exception", e);
+        await supabaseClient.auth.signOut();
         return showError("Unexpected error loading profile.");
       }
 
-      // 2) Sørg for at save-rad finnes
+      // 2) Sørg for at save-rad finnes (kun godkjente brukere kommer hit)
       await ensureSaveRow(user.id);
 
       // 3) Lag session og gå til spillet
       setSession(displayName, user.id);
       window.location.href = "voidmarket.html";
     }
+
 
     document.getElementById("loginBtn").addEventListener("click", handleLogin);
 
@@ -815,6 +817,82 @@
         }
       }catch{}
     })();
+
+
+    let authMode = "login"; // "login" | "signup"
+
+    function setAuthMode(mode){
+      authMode = mode;
+      const row = document.getElementById("usernameRow");
+      const userInput = document.getElementById("username");
+      const hint = document.querySelector(".vm-auth-hint");
+
+      if (mode === "signup"){
+        if (row) row.style.display = "";
+        if (hint) hint.textContent = "Create an account. You'll receive a verification email before you can sign in.";
+        if (userInput) userInput.placeholder = "Display name (3–24 chars)";
+      } else {
+        if (row) row.style.display = "none";
+        if (hint) hint.textContent = "Problems with login? Join our discord and speak with the Voidmarket Team directly!";
+      }
+    }
+
+    async function handleSignup(){
+      showError("");
+
+      const { username, email, password } = getAuthInputs();
+
+      if (!username || username.length < 3) {
+        return showError("Please choose a display name (min 3 chars).");
+      }
+      if (!email || !password) {
+        return showError("Enter email and password.");
+      }
+
+      // Sjekk om display name er tatt (profiles-lookup)
+      const taken = await isUsernameTaken(username);
+      if (taken) return showError("That display name is already taken.");
+
+      // Lag bruker + legg display name i user_metadata
+      const { data, error } = await supabaseClient.auth.signUp({
+        email,
+        password,
+        options: {
+          data: { username }, // user_metadata
+          // optional: redirectTo: "https://dittdomene.no/index.html"
+        }
+      });
+
+      if (error) {
+        console.error("signUp error:", error);
+        return showError(error.message || "Could not create account.");
+      }
+
+      // Supabase sender verification mail når email confirmations er enabled
+      // data.user kan være null i noen flows, men dette er ok.
+      showError("Account created! Join our discord and follow the next steps to verify account!");
+      setAuthMode("login");
+    }
+
+    document.getElementById("loginBtn")?.addEventListener("click", () => {
+      // alltid login-mode når man trykker Sign in
+      setAuthMode("login");
+      handleLogin();
+    });
+
+    document.getElementById("signupBtn")?.addEventListener("click", () => {
+      // bytter til signup-mode første klikk; andre klikk gjør signup
+      if (authMode !== "signup") {
+        setAuthMode("signup");
+        return;
+      }
+      handleSignup();
+    });
+
+    // Start i login-mode
+    setAuthMode("login");
+
+
   </script>
 </body>
 </html>
