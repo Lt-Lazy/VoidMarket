@@ -1032,6 +1032,7 @@ main{ max-width:1100px; margin:20px auto; padding:0 20px; }
 
 /* Global CHAT END */
 
+
 /* Animations */
 @keyframes pop{ from{ transform: scale(.95); opacity: .6 } to{ transform: scale(1); opacity:1 } }
 @keyframes pulse{ 0%{ transform: scale(.9); opacity:.6 } 50%{ transform: scale(1); opacity:1 } 100%{ transform: scale(.9); opacity:.6 } }
@@ -1051,5 +1052,4 @@ main{ max-width:1100px; margin:20px auto; padding:0 20px; }
   .modal-body{ grid-template-columns: 1fr; }
   .modal-img{ max-height:min(55vh, 420px); }
 }
-
 

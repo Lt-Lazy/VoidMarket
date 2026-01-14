@@ -323,6 +323,7 @@ const DATA = {
       id: "normal",
       name: "Standard Box",
       price: 0,
+      inMarket: true,
       design: "assets/boxes/boxNormal/box-normal.png",
       rates: { COMMON: 80, RARE: 10, EPIC: 6, LEGENDARY: 3, MYTHIC: 1 },
       featuredColor: "#38bdf8",
@@ -341,6 +342,7 @@ const DATA = {
       id: "beta",
       name: "Beta Box",
       price: 200,
+      inMarket: true,
       design: "assets/boxes/beta/beta-box.png",
       rates: { COMMON: 50, RARE: 30, EPIC: 17, LEGENDARY: 3 , MYTHIC: 0 },
       featuredColor: "#facc15",
@@ -358,6 +360,7 @@ const DATA = {
       id: "HW25",
       name: "Halloween 25 Box",
       price: 800,
+      inMarket: false,
       design: "assets/boxes/Halloween/hw25/HW2025.png",
       rates: { COMMON: 60, RARE: 20, EPIC: 18, LEGENDARY: 2, MYTHIC: 0 },
       featuredColor: "#a855f7",
@@ -370,11 +373,11 @@ const DATA = {
         { id: "hw25-hau", name: "Haunted Painting", rarity: RARITY.LEGENDARY, img: "assets/boxes/Halloween/hw25/hw25-hau.png", description: "Halloween25 06: Haunted Painting, Seems a bit too late at night to have the lights on, dont you think?", value: 431000 },
       ]
     },
-
     {
       id: "XMAS25",
       name: "Xmas 25 Box",
       price: 800,
+      inMarket: true,
       design: "assets/boxes/Xmas/xmas25/xmas2025.png",
       rates: { COMMON: 63, RARE: 20, EPIC: 15, LEGENDARY: 2, MYTHIC: 0 },
       featuredColor: "#ff0000ff",
@@ -393,6 +396,7 @@ const DATA = {
       id: "fisherman25n",
       name: "Fisherman 25 box",
       price: 750,
+      inMarket: true,
       design: "assets/boxes/Series/fisherman25N/fm25n-box.png",
       rates: { COMMON: 70, RARE: 20, EPIC: 7, LEGENDARY: 3, MYTHIC: 0 },
       pool: [
@@ -403,24 +407,23 @@ const DATA = {
         { id: "fm25n-sm5",  name: "Dead Crew",      rarity: RARITY.LEGENDARY, img: "assets/boxes/Series/fisherman25N/fm25n-sm5.png",   description: "Fisherman25 05: Dead Crew, the plunder group did in fact not find a land to plunder", value: 120000 },
       ]
     },
-
-    /*
     {
       id: "goldenDays25",
       name: "Golden days Box",
       price: 650,
+      inMarket: false,
       design: "assets/boxes/knife/goldenDays25/gd25-box.png",
       rates: { COMMON: 50, RARE: 30, EPIC: 16, LEGENDARY: 3 , MYTHIC: 1 },
       pool: [
 
-      
-        { id: "gd25-gbk7", name: "Golden butterfly knife",   rarity: RARITY.LEGENDARY,    img: "assets/boxes/knife/goldenDays25/gd25-gbk7.png", description: "Golden days 07: This one of a kind butterfly knife marks the participation of the golden days of voidmarket", value: 130000 },
+        { id: "gd25-gbk7",   name: "Golden butterfly knife",  rarity: RARITY.LEGENDARY,  img: "assets/boxes/knife/goldenDays25/gd25-gbk7.png", description: "Golden days 07: This one of a kind butterfly knife marks the participation of the golden days of voidmarket", value: 130000 },
 
       ]
-    },*/
+    },
     
   ]
 };
+
 
 // Helpers
 const getBox     = (id) => DATA.boxes.find(b => b.id === id);
@@ -429,10 +432,12 @@ const ratesToStr = (r) => `${r.COMMON}% C / ${r.RARE}% R / ${r.EPIC}% E / ${r.LE
 // --- App State (localStorage) ---
 let state = {
   coins: 0,
+  boxesOpened: 0,
   inventory: {},
   achievements: {},
   featuredSlots: [null, null, null],
 };
+
 
 // ---------- Next box drop config ----------
 //Endre datoen + navnet når det planlegges en ny box.
@@ -963,7 +968,7 @@ async function load() {
   try {
     const { data, error } = await vmSupabase
       .from("saves")
-      .select("coins, inventory, achievements, titles, current_title_id, featured_slots")
+      .select("coins, boxes_opened, inventory, achievements, titles, current_title_id, featured_slots")
       .eq("user_id", userId)
       .maybeSingle();
 
@@ -974,6 +979,7 @@ async function load() {
 
     if (data) {
       state.coins = data.coins ?? 0;
+      state.boxesOpened = data.boxes_opened ?? 0;
       state.inventory = data.inventory || {};
       state.achievements = data.achievements || {};
       state.titles = data.titles || {};
@@ -1322,12 +1328,14 @@ function renderMarket(){
   const container = document.getElementById("marketCards");
   const featuredWrap = document.getElementById("marketFeatured");
 
+  const marketBoxes = DATA.boxes.filter(b => b.inMarket);
+
   // --- FEATURED BOX ---
   if (featuredWrap) {
     featuredWrap.innerHTML = "";
 
     const featuredBox =
-      DATA.boxes.find(b => b.id === FEATURED_BOX_ID) || DATA.boxes[0];
+      marketBoxes.find(b => b.id === FEATURED_BOX_ID) || marketBoxes[0];
 
     if (featuredBox) {
       const article = document.createElement("article");
@@ -1375,7 +1383,7 @@ function renderMarket(){
   // --- Vanlige box-kort under ---
   if (container){
     container.innerHTML = "";
-    for (const box of DATA.boxes){
+    for (const box of marketBoxes){
       // Ikke dupliser featured box i lista hvis du ikke vil
       if (box.id === FEATURED_BOX_ID) continue;
 
@@ -1506,6 +1514,12 @@ async function purchaseBox(boxId){
   const box = getBox(boxId);
   if(!box) return;
 
+  // Ikke en sikkerhetsregel (DB er autoriteten), men god UX:
+  if (!box.inMarket) {
+    showToast("This box is not available in the Market right now.");
+    return;
+  }
+
   // UX-sjekk (ikke sikkerhet): for å gi rask melding i UI
   if(state.coins < box.price){
     showToast("Not enough credits!");
@@ -1576,6 +1590,21 @@ async function openBoxFromInventory(itemId){
       return;
     }
 
+    //  Increment boxes_opened (server-side counter)
+    try {
+      const { data: newCount, error: boErr } = await vmSupabase.rpc("vm_inc_boxes_opened", { p_inc: 1 });
+      if (!boErr) {
+        const n = Number(newCount);
+        if (Number.isFinite(n)) state.boxesOpened = n;
+        renderProfile?.(); // oppdater hvis profilen er åpen/aktuell
+      } else {
+        console.error("vm_inc_boxes_opened error:", boErr);
+      }
+    } catch (e) {
+      console.error("vm_inc_boxes_opened failed:", e);
+    }
+
+
     // data forventes å være:
     // { inventory: {...}, rolled_item: {...}, rarity: "COMMON" | ... }
     const rolledItem = data?.rolled_item;
@@ -1583,7 +1612,7 @@ async function openBoxFromInventory(itemId){
 
     // Vent litt så UX matcher animasjonen (som før)
     setTimeout(() => {
-      // ✅ Oppdater state fra DB (sannheten)
+      // Oppdater state fra DB (sannheten)
       if (data?.inventory) state.inventory = data.inventory;
 
       renderInventory(getInventoryFilter(), getInventorySearch());
@@ -1620,6 +1649,62 @@ function firstRunBonuses(){
     save();
   }
 }
+
+// ---------- Online Presence (Players Online) ----------
+let vmOnlineChannel = null;
+
+async function initOnlinePresence() {
+  const session = getSession?.();
+  const userId = session?.userId;
+  const username = session?.username;
+
+  if (!vmSupabase || !userId) return;
+
+  // Ikke dobbel-koble
+  if (vmOnlineChannel) return;
+
+  vmOnlineChannel = vmSupabase.channel("vm_online_players", {
+    config: {
+      presence: {
+        // Dette gjør at hver bruker teller som 1 (key = userId)
+        key: userId
+      }
+    }
+  });
+
+  vmOnlineChannel.subscribe(async (status) => {
+    if (status !== "SUBSCRIBED") return;
+
+    // Track at brukeren er online
+    await vmOnlineChannel.track({
+      user_id: userId,
+      username: username || "Unknown",
+      at: new Date().toISOString()
+    });
+  });
+
+  // Når brukeren lukker fanen / bytter side
+  const cleanup = async () => {
+    try { await vmOnlineChannel?.untrack(); } catch {}
+    try { await vmOnlineChannel?.unsubscribe(); } catch {}
+    vmOnlineChannel = null;
+  };
+
+  window.addEventListener("beforeunload", cleanup);
+  window.addEventListener("pagehide", cleanup);
+
+  // Hvis tab blir skjult lenge kan du velge å untrack (valgfritt):
+  document.addEventListener("visibilitychange", async () => {
+    if (!vmOnlineChannel) return;
+    try {
+      if (document.visibilityState === "visible") {
+        await vmOnlineChannel.track({ user_id: userId, username: username || "Unknown", at: new Date().toISOString() });
+      }
+    } catch {}
+  });
+}
+
+// ---------- Online Presence (Players Online) END ----------
 
 /* ---------- Bind & Mount ---------- */
 function bindEvents(){
@@ -1848,7 +1933,6 @@ async function mount(){
 
   (async function boot(){
     await enforceLegalSession(); // 🔥 dette kaster ut hvis user ikke finnes / ikke approved
-    await init(); // resten av spillet
   })();
 
 
@@ -1862,6 +1946,7 @@ async function mount(){
   await loadPlayerShopListings();
 
   // 4) Resten av oppstarten
+  initOnlinePresence();
   firstRunBonuses();
   renderMarket();
   initNextBoxCountdown();
@@ -2385,6 +2470,11 @@ function renderProfile() {
   const coinsEl = document.getElementById("profileCoins");
   if (coinsEl) coinsEl.textContent = fmt(state.coins);
 
+  // Boxes opened
+  const boEl = document.getElementById("profileBoxesOpened");
+  if (boEl) boEl.textContent = fmt(state.boxesOpened || 0);
+
+
   // Inventory stats
   const inv = Object.values(state.inventory || {});
   const totalItems = inv.reduce((sum, it) => sum + (it.count || 0), 0);
@@ -2707,6 +2797,61 @@ function closePublicProfileModal() {
   if (modal) modal.classList.add("hidden");
 }
 
+function openPublicProfileModalPublic(pub) {
+  const modal = document.getElementById("publicProfileModal");
+  if (!modal) return;
+
+  const nameEl    = document.getElementById("publicProfileName");
+  const titleEl   = document.getElementById("publicProfileTitle");
+  const createdEl = document.getElementById("publicProfileCreated");
+  const gridEl    = document.getElementById("publicProfileFeaturedGrid");
+  const emptyEl   = document.getElementById("publicProfileNoFeatured");
+
+  if (nameEl)  nameEl.textContent  = pub?.username || "(no name)";
+  if (titleEl) titleEl.textContent = getTitleLabelById(pub?.current_title_id || null);
+
+  if (createdEl) {
+    createdEl.textContent = pub?.created_at
+      ? new Date(pub.created_at).toLocaleString()
+      : "Unknown";
+  }
+
+  // Featured items kommer ferdig som array fra RPC
+  const items = Array.isArray(pub?.featured_items) ? pub.featured_items : [];
+
+  if (gridEl) {
+    gridEl.innerHTML = "";
+
+    if (!items.length) {
+      if (emptyEl) {
+        emptyEl.style.display = "";
+        emptyEl.textContent = "This player has no featured items yet.";
+      }
+    } else {
+      if (emptyEl) emptyEl.style.display = "none";
+
+      for (const item of items) {
+        const wrapper = document.createElement("div");
+        wrapper.className = "profile-feature-slot";
+
+        const inner = document.createElement("div");
+        inner.className = "profile-feature-slot-inner";
+        inner.innerHTML = `
+          <img src="${item.img}" alt="${item.name}">
+          <div class="profile-feature-name">${item.name}</div>
+          <div class="muted" style="font-size:12px;">x${item.count || 1} • ${item.rarity}</div>
+        `;
+
+        wrapper.appendChild(inner);
+        gridEl.appendChild(wrapper);
+      }
+    }
+  }
+
+  modal.classList.remove("hidden");
+}
+
+
 async function openPublicProfileByName(rawName) {
   const name   = (rawName || "").trim();
   const msgEl  = document.getElementById("socialMessage");
@@ -2716,67 +2861,38 @@ async function openPublicProfileByName(rawName) {
     return;
   }
 
-  const session = getSession?.();
-  const userId  = session?.userId;
-
-  if (!vmSupabase || !userId) {
+  if (!vmSupabase) {
     if (msgEl) msgEl.textContent = "Not connected – try reloading the page.";
     return;
   }
 
   try {
-    // 1) Finn profil (først eksakt match)
-    let { data: profile, error: profErr } = await vmSupabase
-      .from("profiles")
-      .select("id, username, created_at, current_title_id")
-      .eq("username", name)
-      .maybeSingle();
+    const { data, error } = await vmSupabase.rpc("vm_get_public_profile", {
+      p_username: name
+    });
 
-    // 2) Hvis ingen, prøv en ilike-wildcard på username
-    if (!profile && !profErr) {
-      const { data: fallbackRows, error: fbErr } = await vmSupabase
-        .from("profiles")
-        .select("id, username, created_at, current_title_id")
-        .ilike("username", `%${name}%`)
-        .limit(1);
-
-      if (!fbErr && fallbackRows && fallbackRows.length > 0) {
-        profile = fallbackRows[0];
-      } else if (fbErr) {
-        profErr = fbErr;
-      }
-    }
-
-    if (profErr) {
-      console.error("openPublicProfileByName profile error:", profErr);
+    if (error) {
+      console.error("vm_get_public_profile error:", error);
       if (msgEl) msgEl.textContent = "Error looking up user.";
       return;
     }
 
-    if (!profile) {
+    // RPC returnerer "table" -> ofte array med 0/1 rad
+    const row = Array.isArray(data) ? data[0] : data;
+
+    if (!row) {
       if (msgEl) msgEl.textContent = `No user with username "${name}" found.`;
       return;
     }
 
-    // 3) Hent save-raden for denne brukeren (featured_slots + inventory + current_title_id)
-    const { data: saveRow, error: saveErr } = await vmSupabase
-      .from("saves")
-      .select("featured_slots, inventory, current_title_id")
-      .eq("user_id", profile.id)
-      .maybeSingle();
-
-    if (saveErr) {
-      console.error("openPublicProfileByName save error:", saveErr);
-      // Vi kan fortsatt vise profil-info uten featured items
-    }
-
-    openPublicProfileModal(profile, saveRow || null);
+    openPublicProfileModalPublic(row);
     if (msgEl) msgEl.textContent = "";
   } catch (e) {
     console.error("openPublicProfileByName exception:", e);
     if (msgEl) msgEl.textContent = "Unexpected error while loading profile.";
   }
 }
+
 
 function openTradeWithFriend(friend){
   currentTradeFriend = friend;
